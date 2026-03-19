@@ -655,6 +655,14 @@ function NumInput({
 
 // ── HTML preview builder ──────────────────────────────────────────────────────
 
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 function buildPreviewHtml(paths: string[]): string {
   // Group paths into a tree by folder segments
   type FileNode = { name: string; children: FileNode[]; filePath?: string }
@@ -682,9 +690,9 @@ function buildPreviewHtml(paths: string[]): string {
       const isGif = ext === 'gif'
       return `<figure class="item">
   <div class="img-wrap">
-    <img src="${node.filePath}" alt="${node.name}" loading="lazy"${isGif ? '' : ''}>
+    <img src="${escHtml(node.filePath)}" alt="${escHtml(node.name)}" loading="lazy"${isGif ? '' : ''}>
   </div>
-  <figcaption>${node.name}</figcaption>
+  <figcaption>${escHtml(node.name)}</figcaption>
 </figure>`
     }
     // Group node
@@ -695,12 +703,12 @@ function buildPreviewHtml(paths: string[]): string {
     const allLeaves = node.children.every((c) => !!c.filePath)
     if (allLeaves) {
       return `<${tag} class="${cls}">
-  <h${Math.min(depth + 1, 6)} class="group-title">${node.name}</h${Math.min(depth + 1, 6)}>
+  <h${Math.min(depth + 1, 6)} class="group-title">${escHtml(node.name)}</h${Math.min(depth + 1, 6)}>
   <div class="grid">${children}</div>
 </${tag}>`
     }
     return `<${tag} class="${cls}">
-  <h${Math.min(depth + 1, 6)} class="group-title">${node.name}</h${Math.min(depth + 1, 6)}>
+  <h${Math.min(depth + 1, 6)} class="group-title">${escHtml(node.name)}</h${Math.min(depth + 1, 6)}>
   ${children}
 </${tag}>`
   }

@@ -81,7 +81,7 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 - **Search/filter**: filters the tree by name or size
 - **Path mode**: segmented control to include or strip the format folder from ZIP paths
 - **GIF delay**: configurable frame delay (seconds)
-- **Preview HTML**: after export, downloads a self-contained HTML file for visual review
+- **Preview HTML**: after export, downloads a self-contained HTML file for visual review. All Figma node names and file paths are HTML-escaped via `escHtml()` before insertion to prevent XSS.
 - **Resize handle**: drag bottom-right corner to resize the plugin window
 
 ### Place tab (Разместить)
