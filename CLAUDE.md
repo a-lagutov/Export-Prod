@@ -55,6 +55,7 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 
 ## UI Features (`src/ui.tsx`)
 
+### Export tab
 - **Tree view** with collapsible format/channel/platform/creative nodes; sticky format headers
 - **Per-frame size limits**: `FrameRow` component with hover highlight (`--figma-color-bg-hover`) and click-to-focus on limit input
 - **Per-platform size limits**: global limits per format+platform combination
@@ -63,6 +64,12 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 - **GIF delay**: configurable frame delay (seconds)
 - **Preview HTML**: after export, downloads a self-contained HTML file for visual review
 - **Resize handle**: drag bottom-right corner to resize the plugin window
+
+### Place tab (Разместить)
+- Select frames on the page, choose Format / Channel / Platform / Creative, click "Поместить в секции"
+- Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides)
+- **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform)
+- **Section fitting** (`fitSectionToChildren` in `code.ts`): works in local coordinates — shifts the section origin so content has `padding` space on all sides, compensates children's local positions to keep their absolute positions unchanged, then resizes. Uses local coords (not `absoluteBoundingBox`) to avoid stale values after `appendChild`.
 
 ## Key Dependencies
 

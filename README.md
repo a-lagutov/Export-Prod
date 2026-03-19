@@ -58,6 +58,20 @@ Multiple words in a name are separated by dots:
 
 Frames within a creative are grouped into animations by Y-position (frames on the same horizontal line = one GIF animation). Frames are sorted left-to-right by X.
 
+### Placing Frames (Place Tab)
+
+The **Place** tab lets you organize frames into the 4-level section hierarchy directly from the plugin:
+
+1. Select one or more frames on the page.
+2. Fill in Format / Channel / Platform / Creative fields.
+3. Click **"Поместить в секции"** — the plugin creates missing sections, places the frames inside the creative section, and resizes all parent sections to fit.
+
+Layout rules:
+- Frames within a creative are stacked **vertically** (GIF slides — horizontally).
+- New creative sections are placed to the **right** of existing ones within a platform.
+- New platform / channel sections are placed **below** existing ones.
+- All sections are resized bottom-up (creative → platform → channel → format) to tightly wrap their content with 250 px padding.
+
 ### Export
 
 When clicking "Export":
@@ -175,6 +189,20 @@ xxxx-yyy
 #### GIF
 
 Фреймы внутри одного креатива группируются в анимацию по Y-позиции (фреймы на одной горизонтали = одна GIF-анимация). Кадры сортируются слева направо по X.
+
+### Размещение фреймов (вкладка «Разместить»)
+
+Вкладка **Разместить** позволяет раскладывать фреймы по 4-уровневой иерархии секций прямо из плагина:
+
+1. Выделите один или несколько фреймов на странице.
+2. Заполните поля Формат / Канал / Площадка / Креатив.
+3. Нажмите **«Поместить в секции»** — плагин создаст недостающие секции, поместит фреймы в секцию креатива и обновит размеры всех родительских секций.
+
+Правила раскладки:
+- Фреймы внутри креатива укладываются **вертикально** (кадры GIF — горизонтально).
+- Новые секции креатива размещаются **правее** существующих внутри площадки.
+- Новые секции площадки / канала размещаются **ниже** существующих.
+- Все секции обновляются снизу вверх (креатив → площадка → канал → формат): плотно оборачивают содержимое с отступом 250 px.
 
 ### Экспорт
 

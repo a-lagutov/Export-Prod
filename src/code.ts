@@ -1,5 +1,5 @@
 // Export Prod — Figma plugin main thread
-import type { TreeNode, ExportItem } from './types'
+import type { TreeNode, ExportItem, SectionFormat } from './types'
 
 const FORMATS = ['jpg', 'png', 'webp', 'gif'] as const;
 
@@ -122,6 +122,79 @@ function scanPage(): { tree: TreeNode[], items: ExportItem[] } {
   return { tree, items };
 }
 
+// Resize a section so its bounding box encompasses all its children + padding.
+// Uses local coordinates (always current) instead of absoluteBoundingBox (can be stale).
+// Shifts the section origin so content has `padding` space on all sides, compensating
+// children's local positions to keep their absolute positions unchanged.
+function fitSectionToChildren(section: SectionNode, padding = 40): void {
+  const children = section.children as SceneNode[];
+  if (children.length === 0) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const child of children) {
+    minX = Math.min(minX, child.x);
+    minY = Math.min(minY, child.y);
+    maxX = Math.max(maxX, child.x + child.width);
+    maxY = Math.max(maxY, child.y + child.height);
+  }
+  if (!isFinite(minX)) return;
+
+  // How much the section origin needs to shift so content starts at `padding`
+  const shiftX = minX - padding;
+  const shiftY = minY - padding;
+
+  // Move the section in parent coords
+  section.x += shiftX;
+  section.y += shiftY;
+
+  // Compensate children so their absolute positions don't change
+  for (const child of children) {
+    child.x -= shiftX;
+    child.y -= shiftY;
+  }
+
+  const newW = Math.max(1, maxX - minX + 2 * padding);
+  const newH = Math.max(1, maxY - minY + 2 * padding);
+  try {
+    section.resizeWithoutConstraints(newW, newH);
+  } catch {
+    (section as unknown as { resize(w: number, h: number): void }).resize(newW, newH);
+  }
+}
+
+function setSectionFill(section: SectionNode, opacity: number): void {
+  section.fills = [{ type: 'SOLID', color: { r: 68 / 255, g: 68 / 255, b: 68 / 255 }, opacity }];
+}
+
+function getAllSections(): SectionFormat[] {
+  const formats: SectionFormat[] = [];
+
+  for (const topChild of figma.currentPage.children) {
+    if (!isSection(topChild)) continue;
+    const formatLower = topChild.name.trim().toLowerCase();
+    if (!FORMATS.find(f => f === formatLower)) continue;
+
+    const channels = [];
+    for (const ch of topChild.children) {
+      if (!isSection(ch)) continue;
+      const platforms = [];
+      for (const pl of ch.children) {
+        if (!isSection(pl)) continue;
+        const creatives: string[] = [];
+        for (const cr of pl.children) {
+          if (!isSection(cr)) continue;
+          creatives.push(cr.name);
+        }
+        platforms.push({ name: pl.name, creatives });
+      }
+      channels.push({ name: ch.name, platforms });
+    }
+    formats.push({ name: topChild.name.trim(), channels });
+  }
+
+  return formats;
+}
+
 let exportItems: ExportItem[] = [];
 
 figma.showUI(__html__, { width: 400, height: 560, themeColors: true });
@@ -150,6 +223,161 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
   if (msg.type === 'resize') {
     const h = msg.height as number;
     figma.ui.resize(400, Math.max(200, h));
+  }
+
+  if (msg.type === 'get-sections') {
+    figma.ui.postMessage({ type: 'sections-data', sections: getAllSections() });
+    const frames = figma.currentPage.selection.filter(isFrame);
+    figma.ui.postMessage({ type: 'selection-change', count: frames.length });
+  }
+
+  if (msg.type === 'place-frames') {
+    const formatName = msg.formatName as string;
+    const channelName = msg.channelName as string;
+    const platformName = msg.platformName as string;
+    const creativeName = msg.creativeName as string;
+
+    const selectedFrames = figma.currentPage.selection.filter(isFrame);
+
+    if (selectedFrames.length === 0) {
+      figma.ui.postMessage({ type: 'place-result', success: false, message: 'Нет выбранных фреймов' });
+      return;
+    }
+
+    const page = figma.currentPage;
+    const normalizedFormat = formatName.toUpperCase();
+    const PLACE_PADDING = 250;
+    const FRAME_GAP = 250;
+    const GIF_SLIDE_GAP = 50;
+
+    // Find or create format section
+    let formatSection = page.children.find(
+      (n): n is SectionNode => isSection(n) && n.name.toLowerCase() === formatName.toLowerCase()
+    );
+    if (!formatSection) {
+      formatSection = figma.createSection();
+      formatSection.name = normalizedFormat;
+    }
+    setSectionFill(formatSection, 0.2);
+
+    // Find or create channel section
+    let channelSection = formatSection.children.find(
+      (n): n is SectionNode => isSection(n) && n.name === channelName
+    );
+    if (!channelSection) {
+      channelSection = figma.createSection();
+      channelSection.name = channelName;
+      formatSection.appendChild(channelSection);
+      const chSiblings = formatSection.children.filter(
+        (n): n is SectionNode => isSection(n) && n !== channelSection
+      );
+      if (chSiblings.length > 0) {
+        channelSection.x = Math.min(...chSiblings.map(s => s.x));
+        channelSection.y = Math.max(...chSiblings.map(s => s.y + s.height)) + FRAME_GAP;
+      } else {
+        channelSection.x = PLACE_PADDING;
+        channelSection.y = PLACE_PADDING;
+      }
+    }
+    setSectionFill(channelSection, 0.4);
+
+    // Find or create platform section
+    let platformSection = channelSection.children.find(
+      (n): n is SectionNode => isSection(n) && n.name === platformName
+    );
+    if (!platformSection) {
+      platformSection = figma.createSection();
+      platformSection.name = platformName;
+      channelSection.appendChild(platformSection);
+      const plSiblings = channelSection.children.filter(
+        (n): n is SectionNode => isSection(n) && n !== platformSection
+      );
+      if (plSiblings.length > 0) {
+        platformSection.x = Math.min(...plSiblings.map(s => s.x));
+        platformSection.y = Math.max(...plSiblings.map(s => s.y + s.height)) + FRAME_GAP;
+      } else {
+        platformSection.x = PLACE_PADDING;
+        platformSection.y = PLACE_PADDING;
+      }
+    }
+    setSectionFill(platformSection, 0.6);
+
+    // Find or create creative section
+    let creativeSection = platformSection.children.find(
+      (n): n is SectionNode => isSection(n) && n.name === creativeName
+    );
+    if (!creativeSection) {
+      creativeSection = figma.createSection();
+      creativeSection.name = creativeName;
+      platformSection.appendChild(creativeSection);
+      const crSiblings = platformSection.children.filter(
+        (n): n is SectionNode => isSection(n) && n !== creativeSection
+      );
+      if (crSiblings.length > 0) {
+        creativeSection.x = Math.max(...crSiblings.map(s => s.x + s.width)) + FRAME_GAP;
+        creativeSection.y = Math.min(...crSiblings.map(s => s.y));
+      } else {
+        creativeSection.x = PLACE_PADDING;
+        creativeSection.y = PLACE_PADDING;
+      }
+    }
+    setSectionFill(creativeSection, 0.8);
+
+    // Find bottom of existing frames in creative section (local coords)
+    const existingFrames = creativeSection.children.filter(isFrame) as FrameNode[];
+    let nextY = existingFrames.length > 0
+      ? Math.max(...existingFrames.map(f => f.y + f.height)) + FRAME_GAP
+      : PLACE_PADDING;
+
+    // Place frames: vertically stacked; for GIF — group by name+y, slides horizontal
+    if (formatName.toLowerCase() === 'gif') {
+      const groups = new Map<string, FrameNode[]>();
+      for (const frame of selectedFrames) {
+        const key = `${frame.name}_y${Math.round(frame.y)}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(frame);
+      }
+      for (const [, groupFrames] of groups) {
+        groupFrames.sort((a, b) => a.x - b.x);
+        let groupNextX = PLACE_PADDING;
+        for (const frame of groupFrames) {
+          creativeSection.appendChild(frame);
+          frame.x = groupNextX;
+          frame.y = nextY;
+          groupNextX += frame.width + GIF_SLIDE_GAP;
+        }
+        nextY += Math.max(...groupFrames.map(f => f.height)) + FRAME_GAP;
+      }
+    } else {
+      for (const frame of selectedFrames) {
+        creativeSection.appendChild(frame);
+        frame.x = PLACE_PADDING;
+        frame.y = nextY;
+        nextY += frame.height + FRAME_GAP;
+      }
+    }
+
+    // Resize sections bottom-up with 250px padding
+    fitSectionToChildren(creativeSection, PLACE_PADDING);
+    fitSectionToChildren(platformSection, PLACE_PADDING);
+    fitSectionToChildren(channelSection, PLACE_PADDING);
+    fitSectionToChildren(formatSection, PLACE_PADDING);
+
+    // Scroll viewport to show the result
+    figma.viewport.scrollAndZoomIntoView([creativeSection]);
+
+    const count = selectedFrames.length;
+    figma.ui.postMessage({
+      type: 'place-result',
+      success: true,
+      message: `${count} ${count === 1 ? 'фрейм помещён' : count < 5 ? 'фрейма помещено' : 'фреймов помещено'} в ${normalizedFormat} / ${channelName} / ${platformName} / ${creativeName}`,
+    });
+
+    // Update both tabs
+    figma.ui.postMessage({ type: 'sections-data', sections: getAllSections() });
+    const result = scanPage();
+    exportItems = result.items;
+    figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items });
   }
 
   if (msg.type === 'rename-frames') {
@@ -188,6 +416,11 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     }
   }
 };
+
+figma.on('selectionchange', () => {
+  const frames = figma.currentPage.selection.filter(isFrame);
+  figma.ui.postMessage({ type: 'selection-change', count: frames.length });
+});
 
 async function sendFrame(index: number) {
   const item = exportItems[index];

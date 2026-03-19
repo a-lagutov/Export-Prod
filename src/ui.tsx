@@ -2,7 +2,7 @@ import { Fragment } from 'preact'
 import { useState, useEffect, useRef, useMemo } from 'preact/hooks'
 import { render } from 'preact'
 import { Button, Text, Muted, VerticalSpace, Divider } from '@create-figma-plugin/ui'
-import type { TreeNode, ExportItem } from './types'
+import type { TreeNode, ExportItem, SectionFormat } from './types'
 import JSZip from 'jszip'
 import GIF from 'gif.js'
 
@@ -1240,6 +1240,629 @@ function App() {
   )
 }
 
+// ── Tab bar ───────────────────────────────────────────────────────────────────
+
+function TabBar({
+  active,
+  onChange,
+}: {
+  active: 'export' | 'organize'
+  onChange: (t: 'export' | 'organize') => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        borderBottom: '1px solid var(--figma-color-border)',
+        background: 'var(--figma-color-bg)',
+        flexShrink: 0,
+      }}
+    >
+      {(
+        [
+          { key: 'export', label: 'Экспорт' },
+          { key: 'organize', label: 'Разместить' },
+        ] as const
+      ).map(({ key, label }) => (
+        <button
+          key={key}
+          onClick={() => onChange(key)}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: 'none',
+            borderBottom:
+              active === key
+                ? '2px solid var(--figma-color-bg-brand)'
+                : '2px solid transparent',
+            background: 'transparent',
+            color:
+              active === key
+                ? 'var(--figma-color-text)'
+                : 'var(--figma-color-text-secondary)',
+            fontSize: 12,
+            fontWeight: active === key ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Combobox dropdown shared styles ───────────────────────────────────────────
+
+function ComboboxDropdown({
+  options,
+  onSelect,
+}: {
+  options: string[]
+  onSelect: (v: string) => void
+}) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        background: 'var(--figma-color-bg)',
+        border: '1px solid var(--figma-color-border)',
+        borderRadius: 4,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        maxHeight: 160,
+        overflowY: 'auto',
+        marginTop: 2,
+      }}
+    >
+      {options.map((o) => (
+        <div
+          key={o}
+          onMouseDown={() => onSelect(o)}
+          style={{ padding: '6px 8px', fontSize: 11, cursor: 'pointer', color: 'var(--figma-color-text)' }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'var(--figma-color-bg-hover)')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = 'transparent')}
+        >
+          {o}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Path field (combobox with label) ─────────────────────────────────────────
+
+function PathField({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+  placeholder?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const filtered = options.filter((o) => o.toLowerCase().includes(value.toLowerCase()))
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 72, fontSize: 11, color: 'var(--figma-color-text-secondary)', flexShrink: 0 }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, position: 'relative' }}>
+        <input
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          onInput={(e) => onChange((e.target as HTMLInputElement).value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '5px 8px',
+            border: '1px solid var(--figma-color-border)',
+            borderRadius: 4,
+            fontSize: 11,
+            background: 'var(--figma-color-bg)',
+            color: 'var(--figma-color-text)',
+            outline: 'none',
+          }}
+        />
+        {open && filtered.length > 0 && (
+          <ComboboxDropdown options={filtered} onSelect={(o) => { onChange(o); setOpen(false) }} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Path input (combobox without label, slash-path autocomplete) ───────────────
+
+function getPathCompletions(input: string, sections: SectionFormat[]): string[] {
+  const parts = input.split('/')
+  const depth = parts.length - 1
+  const current = parts[depth].toLowerCase()
+  const prev = parts.slice(0, depth)
+
+  if (depth === 0) {
+    return sections.filter((f) => f.name.toLowerCase().includes(current)).map((f) => f.name)
+  }
+  const fmt = sections.find((f) => f.name.toLowerCase() === prev[0]?.toLowerCase())
+  if (!fmt) return []
+  if (depth === 1) {
+    return fmt.channels
+      .filter((c) => c.name.toLowerCase().includes(current))
+      .map((c) => `${prev[0]}/${c.name}`)
+  }
+  const ch = fmt.channels.find((c) => c.name === prev[1])
+  if (!ch) return []
+  if (depth === 2) {
+    return ch.platforms
+      .filter((p) => p.name.toLowerCase().includes(current))
+      .map((p) => `${prev.join('/')}/${p.name}`)
+  }
+  const pl = ch.platforms.find((p) => p.name === prev[2])
+  if (!pl) return []
+  return pl.creatives
+    .filter((cr) => cr.toLowerCase().includes(current))
+    .map((cr) => `${prev.join('/')}/${cr}`)
+}
+
+function PathInput({
+  value,
+  onChange,
+  sections,
+}: {
+  value: string
+  onChange: (v: string) => void
+  sections: SectionFormat[]
+}) {
+  const [open, setOpen] = useState(false)
+  const completions = useMemo(() => getPathCompletions(value, sections), [value, sections])
+  const parts = value.split('/')
+
+  function handleSelect(completion: string) {
+    // If less than 4 parts, append "/" to prompt next segment
+    const completionParts = completion.split('/')
+    onChange(completionParts.length < 4 ? completion + '/' : completion)
+    setOpen(false)
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        type="text"
+        value={value}
+        placeholder="GIF/Канал/Площадка/Креатив"
+        onInput={(e) => onChange((e.target as HTMLInputElement).value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          padding: '5px 8px',
+          border: '1px solid var(--figma-color-border)',
+          borderRadius: 4,
+          fontSize: 11,
+          background: 'var(--figma-color-bg)',
+          color: 'var(--figma-color-text)',
+          outline: 'none',
+          fontFamily: 'monospace',
+        }}
+      />
+      {/* Segment hint */}
+      {parts.length < 5 && (
+        <div style={{ marginTop: 3, fontSize: 10, color: 'var(--figma-color-text-tertiary)', display: 'flex', gap: 4 }}>
+          {['Формат', 'Канал', 'Площадка', 'Креатив'].map((label, i) => (
+            <span key={label} style={{ fontWeight: i === parts.length - 1 ? 600 : 400, color: i === parts.length - 1 ? 'var(--figma-color-text-brand)' : 'var(--figma-color-text-tertiary)' }}>
+              {i > 0 && '/ '}{label}
+            </span>
+          ))}
+        </div>
+      )}
+      {open && completions.length > 0 && (
+        <ComboboxDropdown options={completions} onSelect={handleSelect} />
+      )}
+    </div>
+  )
+}
+
+// ── Organize page ─────────────────────────────────────────────────────────────
+
+function OrganizePage() {
+  const [sections, setSections] = useState<SectionFormat[]>([])
+  const [selectedCount, setSelectedCount] = useState(0)
+  const [inputMode, setInputMode] = useState<'fields' | 'path'>('fields')
+
+  // Fields mode state
+  const [format, setFormat] = useState('')
+  const [channel, setChannel] = useState('')
+  const [platform, setPlatform] = useState('')
+  const [creative, setCreative] = useState('')
+
+  // Path mode state
+  const [pathInput, setPathInput] = useState('')
+
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const msg = event.data?.pluginMessage
+      if (!msg) return
+      if (msg.type === 'sections-data') setSections(msg.sections as SectionFormat[])
+      if (msg.type === 'selection-change') setSelectedCount(msg.count as number)
+      if (msg.type === 'place-result') {
+        setResult({ success: msg.success as boolean, message: msg.message as string })
+      }
+    }
+    window.addEventListener('message', handler)
+    parent.postMessage({ pluginMessage: { type: 'get-sections' } }, '*')
+    return () => window.removeEventListener('message', handler)
+  }, [])
+
+  // Derived autocomplete options for fields mode
+  const formatSection = sections.find((s) => s.name.toLowerCase() === format.toLowerCase())
+  const channelOptions = formatSection ? formatSection.channels.map((c) => c.name) : []
+  const channelSection = formatSection?.channels.find((c) => c.name === channel)
+  const platformOptions = channelSection ? channelSection.platforms.map((p) => p.name) : []
+  const platformSection = channelSection?.platforms.find((p) => p.name === platform)
+  const creativeOptions = platformSection ? platformSection.creatives : []
+
+  // Effective values based on mode
+  function getEffectiveValues() {
+    if (inputMode === 'fields') {
+      return { fmt: format.trim(), ch: channel.trim(), pl: platform.trim(), cr: creative.trim() }
+    }
+    const parts = pathInput.split('/').map((s) => s.trim())
+    return { fmt: parts[0] || '', ch: parts[1] || '', pl: parts[2] || '', cr: parts[3] || '' }
+  }
+
+  const { fmt: eFmt, ch: eCh, pl: ePl, cr: eCr } = getEffectiveValues()
+  const canPlace = !!(eFmt && eCh && ePl && eCr && selectedCount > 0)
+
+  function doPlace(fmt: string, ch: string, pl: string, cr: string) {
+    setResult(null)
+    parent.postMessage(
+      { pluginMessage: { type: 'place-frames', formatName: fmt, channelName: ch, platformName: pl, creativeName: cr } },
+      '*',
+    )
+  }
+
+  return (
+    <div style={{ padding: 12, fontFamily: 'Inter, system-ui, sans-serif', fontSize: 12 }}>
+      {/* Selection indicator */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div
+          style={{
+            flex: 1,
+            padding: '7px 10px',
+            background: selectedCount > 0 ? 'var(--figma-color-bg-brand)' : 'var(--figma-color-bg-secondary)',
+            borderRadius: 6,
+            fontSize: 11,
+            color: selectedCount > 0 ? 'var(--figma-color-text-onbrand)' : 'var(--figma-color-text-secondary)',
+          }}
+        >
+          {selectedCount > 0
+            ? `Выделено ${selectedCount} ${declension(selectedCount, 'фрейм', 'фрейма', 'фреймов')} на странице`
+            : 'Выделите фреймы на странице'}
+        </div>
+        <span
+          onClick={() => parent.postMessage({ pluginMessage: { type: 'get-sections' } }, '*')}
+          style={{ cursor: 'pointer', fontSize: 11, color: 'var(--figma-color-text-brand)', userSelect: 'none', flexShrink: 0 }}
+        >
+          Обновить
+        </span>
+      </div>
+
+      {/* Input mode toggle */}
+      <SegmentedControl
+        value={inputMode}
+        options={[
+          { value: 'fields', label: 'По полям' },
+          { value: 'path', label: 'Путь' },
+        ]}
+        onChange={setInputMode}
+      />
+      <VerticalSpace space="small" />
+
+      {/* Inputs */}
+      {inputMode === 'fields' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <PathField
+            label="Формат"
+            value={format}
+            onChange={(v) => { setFormat(v); setChannel(''); setPlatform(''); setCreative('') }}
+            options={['JPG', 'PNG', 'WEBP', 'GIF']}
+            placeholder="JPG, PNG, WEBP или GIF"
+          />
+          <PathField
+            label="Канал"
+            value={channel}
+            onChange={(v) => { setChannel(v); setPlatform(''); setCreative('') }}
+            options={channelOptions}
+            placeholder="например: 5_Context_Media"
+          />
+          <PathField
+            label="Площадка"
+            value={platform}
+            onChange={(v) => { setPlatform(v); setCreative('') }}
+            options={platformOptions}
+            placeholder="например: VK, TG, Bigo"
+          />
+          <PathField
+            label="Креатив"
+            value={creative}
+            onChange={setCreative}
+            options={creativeOptions}
+            placeholder="например: 1234-card"
+          />
+        </div>
+      ) : (
+        <PathInput value={pathInput} onChange={setPathInput} sections={sections} />
+      )}
+
+      {/* Place button */}
+      <VerticalSpace space="small" />
+      <Button fullWidth onClick={() => doPlace(eFmt, eCh, ePl, eCr)} disabled={!canPlace}>
+        {selectedCount > 0
+          ? `Поместить ${selectedCount} ${declension(selectedCount, 'фрейм', 'фрейма', 'фреймов')} в секции`
+          : 'Поместить в секции'}
+      </Button>
+
+      {/* Result */}
+      {result && (
+        <Fragment>
+          <VerticalSpace space="extraSmall" />
+          <div style={{ padding: '7px 10px', background: result.success ? '#d4edda' : '#f8d7da', borderRadius: 6, fontSize: 11, color: result.success ? '#155724' : '#721c24' }}>
+            {result.message}
+          </div>
+        </Fragment>
+      )}
+
+      {/* Section tree with add buttons */}
+      {sections.length > 0 && (
+        <SectionTreePanel sections={sections} onPlace={doPlace} selectedCount={selectedCount} />
+      )}
+    </div>
+  )
+}
+
+// ── Section tree panel ────────────────────────────────────────────────────────
+
+function SectionTreePanel({
+  sections,
+  onPlace,
+  selectedCount,
+}: {
+  sections: SectionFormat[]
+  onPlace: (fmt: string, ch: string, pl: string, cr: string) => void
+  selectedCount: number
+}) {
+  const [query, setQuery] = useState('')
+  return (
+    <Fragment>
+      <VerticalSpace space="small" />
+      <Text>
+        <strong>Добавить в секцию</strong>
+      </Text>
+      <VerticalSpace space="extraSmall" />
+      <SearchInput value={query} onChange={setQuery} />
+      <VerticalSpace space="extraSmall" />
+      <SectionTree sections={sections} searchQuery={query} onPlace={onPlace} selectedCount={selectedCount} />
+    </Fragment>
+  )
+}
+
+// ── Section tree ──────────────────────────────────────────────────────────────
+
+function SectionTree({
+  sections,
+  searchQuery,
+  onPlace,
+  selectedCount,
+}: {
+  sections: SectionFormat[]
+  searchQuery: string
+  onPlace: (fmt: string, ch: string, pl: string, cr: string) => void
+  selectedCount: number
+}) {
+  const q = searchQuery.toLowerCase()
+  const matches = (name: string) => !q || name.toLowerCase().includes(q)
+
+  return (
+    <div
+      style={{
+        maxHeight: 220,
+        overflowY: 'auto',
+        border: '1px solid var(--figma-color-border)',
+        borderRadius: 6,
+        padding: '4px 0',
+        fontSize: 11,
+      }}
+    >
+      {sections.map((fmt) => {
+        const visibleChannels = fmt.channels.filter(
+          (ch) => matches(fmt.name) || matches(ch.name) || ch.platforms.some((pl) => matches(pl.name) || pl.creatives.some(matches)),
+        )
+        if (visibleChannels.length === 0 && !matches(fmt.name)) return null
+        return (
+          <SectionFormatNode
+            key={fmt.name}
+            fmt={fmt}
+            visibleChannels={visibleChannels}
+            matches={matches}
+            onPlace={onPlace}
+            selectedCount={selectedCount}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+function SectionFormatNode({
+  fmt,
+  visibleChannels,
+  matches,
+  onPlace,
+  selectedCount,
+}: {
+  fmt: SectionFormat
+  visibleChannels: SectionFormat['channels']
+  matches: (s: string) => boolean
+  onPlace: (fmt: string, ch: string, pl: string, cr: string) => void
+  selectedCount: number
+}) {
+  const [collapsed, setCollapsed] = useState(false)
+  return (
+    <div>
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', cursor: 'pointer', userSelect: 'none', fontWeight: 600 }}
+      >
+        <span style={{ fontSize: 8, color: 'var(--figma-color-text-tertiary)', transform: collapsed ? 'rotate(-90deg)' : 'none', display: 'inline-block', width: 10, transition: 'transform 0.12s' }}>▼</span>
+        <TagBadge format={fmt.name.toLowerCase()} />
+        <span style={{ marginLeft: 2 }}>{fmt.name}</span>
+      </div>
+      {!collapsed &&
+        visibleChannels.map((ch) => (
+          <SectionChannelNode
+            key={ch.name}
+            ch={ch}
+            formatName={fmt.name}
+            matches={matches}
+            onPlace={onPlace}
+            selectedCount={selectedCount}
+          />
+        ))}
+    </div>
+  )
+}
+
+function SectionChannelNode({
+  ch,
+  formatName,
+  matches,
+  onPlace,
+  selectedCount,
+}: {
+  ch: { name: string; platforms: { name: string; creatives: string[] }[] }
+  formatName: string
+  matches: (s: string) => boolean
+  onPlace: (fmt: string, ch: string, pl: string, cr: string) => void
+  selectedCount: number
+}) {
+  const [collapsed, setCollapsed] = useState(true)
+  return (
+    <div style={{ paddingLeft: 14 }}>
+      <div
+        onClick={() => setCollapsed(!collapsed)}
+        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px 3px 0', cursor: 'pointer', userSelect: 'none' }}
+      >
+        <span style={{ fontSize: 8, color: 'var(--figma-color-text-tertiary)', transform: collapsed ? 'rotate(-90deg)' : 'none', display: 'inline-block', width: 10, transition: 'transform 0.12s' }}>▼</span>
+        <span style={{ color: 'var(--figma-color-text)' }}>{ch.name}</span>
+      </div>
+      {!collapsed &&
+        ch.platforms.map((pl) => {
+          const visibleCreatives = pl.creatives.filter(
+            (cr) => matches(ch.name) || matches(pl.name) || matches(cr),
+          )
+          if (visibleCreatives.length === 0 && !matches(pl.name)) return null
+          return (
+            <div key={pl.name} style={{ paddingLeft: 14 }}>
+              <div style={{ padding: '2px 0', color: 'var(--figma-color-text-secondary)', fontStyle: 'italic', fontSize: 10 }}>
+                {pl.name}
+              </div>
+              {visibleCreatives.map((cr) => (
+                <CreativeRow
+                  key={cr}
+                  name={cr}
+                  onAdd={() => onPlace(formatName, ch.name, pl.name, cr)}
+                  enabled={selectedCount > 0}
+                />
+              ))}
+            </div>
+          )
+        })}
+    </div>
+  )
+}
+
+function CreativeRow({
+  name,
+  onAdd,
+  enabled,
+}: {
+  name: string
+  onAdd: () => void
+  enabled: boolean
+}) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '2px 4px 2px 0',
+        borderRadius: 3,
+        background: hovered ? 'var(--figma-color-bg-hover)' : 'transparent',
+      }}
+    >
+      <span style={{ flex: 1, color: 'var(--figma-color-text-tertiary)', fontSize: 10, paddingLeft: 2 }}>{name}</span>
+      <button
+        onClick={(e) => { e.stopPropagation(); if (enabled) onAdd() }}
+        title={enabled ? 'Добавить выделенные фреймы' : 'Выделите фреймы на странице'}
+        style={{
+          width: 18,
+          height: 18,
+          border: 'none',
+          borderRadius: 3,
+          background: enabled && hovered ? 'var(--figma-color-bg-brand)' : 'transparent',
+          color: enabled ? 'var(--figma-color-text-brand)' : 'var(--figma-color-text-disabled)',
+          fontSize: 14,
+          lineHeight: '16px',
+          cursor: enabled ? 'pointer' : 'default',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          padding: 0,
+        }}
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
+// ── Root ──────────────────────────────────────────────────────────────────────
+
+function Root() {
+  const [activeTab, setActiveTab] = useState<'export' | 'organize'>('export')
+  return (
+    <Fragment>
+      <TabBar active={activeTab} onChange={setActiveTab} />
+      <div style={{ display: activeTab === 'export' ? 'block' : 'none' }}>
+        <App />
+      </div>
+      <div style={{ display: activeTab === 'organize' ? 'block' : 'none' }}>
+        <OrganizePage />
+      </div>
+      <ResizeHandle />
+    </Fragment>
+  )
+}
+
 function declension(n: number, one: string, few: string, many: string): string {
   const abs = Math.abs(n) % 100
   const lastDigit = abs % 10
@@ -1302,13 +1925,7 @@ function ResizeHandle() {
 
 try {
   const root = document.getElementById('create-figma-plugin')
-  render(
-    <Fragment>
-      <App />
-      <ResizeHandle />
-    </Fragment>,
-    root!,
-  )
+  render(<Root />, root!)
 } catch (e) {
   console.error('[export-prod] render error:', e)
   document.body.innerHTML = `<div style="color:red;padding:16px;font-size:12px">Render error: ${e}</div>`

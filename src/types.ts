@@ -13,3 +13,18 @@ export interface ExportItem {
   width: number
   height: number
 }
+
+export interface SectionPlatform {
+  name: string
+  creatives: string[]
+}
+
+export interface SectionChannel {
+  name: string
+  platforms: SectionPlatform[]
+}
+
+export interface SectionFormat {
+  name: string
+  channels: SectionChannel[]
+}
