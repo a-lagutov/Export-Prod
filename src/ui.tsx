@@ -1663,7 +1663,7 @@ function OrganizePage() {
             : 'Выделите фреймы на странице'}
         </div>
         <span
-          onClick={() => parent.postMessage({ pluginMessage: { type: 'get-sections' } }, '*')}
+          onClick={() => parent.postMessage({ pluginMessage: { type: 'align-sections' } }, '*')}
           style={{
             cursor: 'pointer',
             fontSize: 11,
@@ -1672,7 +1672,7 @@ function OrganizePage() {
             flexShrink: 0,
           }}
         >
-          Обновить
+          Выровнять секции
         </span>
       </div>
 
@@ -2042,6 +2042,13 @@ function CreativeRow({
 
 function Root() {
   const [activeTab, setActiveTab] = useState<'export' | 'organize'>('export')
+
+  useEffect(() => {
+    if (activeTab === 'organize') {
+      parent.postMessage({ pluginMessage: { type: 'get-sections' } }, '*')
+    }
+  }, [activeTab])
+
   return (
     <Fragment>
       <TabBar active={activeTab} onChange={setActiveTab} />

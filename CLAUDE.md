@@ -89,6 +89,7 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 - Select frames on the page, choose Format / Channel / Platform / Creative, click "Поместить в секции"
 - Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides)
 - **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform)
+- **New format section positioning**: if other format sections already exist on the page, the new one is placed 5000px to the right of the rightmost; if no format sections exist yet, it is placed at the absolute position of the selected frames and automatically selected in Figma
 - **Section fitting** (`fitSectionToChildren` in `code.ts`): works in local coordinates — shifts the section origin so content has `padding` space on all sides, compensates children's local positions to keep their absolute positions unchanged, then resizes. Uses local coords (not `absoluteBoundingBox`) to avoid stale values after `appendChild`.
 
 ## Analytics (`src/analytics.ts`)

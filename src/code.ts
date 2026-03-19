@@ -165,6 +165,27 @@ function fitSectionToChildren(section: SectionNode, padding = 40): void {
   }
 }
 
+// Resize a section to contain its children with padding, WITHOUT moving the section.
+// Unlike fitSectionToChildren, this does not shift the section origin or compensate children.
+// Use this when children are already positioned correctly and you only need to resize the parent.
+function resizeSectionOnly(section: SectionNode, padding: number): void {
+  const children = section.children as SceneNode[]
+  if (children.length === 0) return
+  let maxX = 0,
+    maxY = 0
+  for (const child of children) {
+    maxX = Math.max(maxX, child.x + child.width)
+    maxY = Math.max(maxY, child.y + child.height)
+  }
+  const newW = Math.max(1, maxX + padding)
+  const newH = Math.max(1, maxY + padding)
+  try {
+    section.resizeWithoutConstraints(newW, newH)
+  } catch {
+    ;(section as unknown as { resize(w: number, h: number): void }).resize(newW, newH)
+  }
+}
+
 function setSectionFill(section: SectionNode, opacity: number): void {
   section.fills = [{ type: 'SOLID', color: { r: 68 / 255, g: 68 / 255, b: 68 / 255 }, opacity }]
 }
@@ -199,6 +220,7 @@ function getAllSections(): SectionFormat[] {
 }
 
 let exportItems: ExportItem[] = []
+let isExporting = false
 
 figma.showUI(__html__, { width: 400, height: 560, themeColors: true })
 
@@ -209,11 +231,14 @@ figma.showUI(__html__, { width: 400, height: 560, themeColors: true })
   figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
 }
 
-// Re-scan when page selection changes
+// Re-scan when page changes
 figma.on('currentpagechange', () => {
   const result = scanPage()
   exportItems = result.items
   figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
+  figma.ui.postMessage({ type: 'sections-data', sections: getAllSections() })
+  const frames = figma.currentPage.selection.filter(isFrame)
+  figma.ui.postMessage({ type: 'selection-change', count: frames.length })
 })
 
 figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
@@ -257,13 +282,32 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     const FRAME_GAP = 250
     const GIF_SLIDE_GAP = 50
 
+    // Collect existing format sections before creating a new one (used for positioning)
+    const existingFormatSections = page.children.filter(
+      (n): n is SectionNode =>
+        isSection(n) && FORMATS.includes(n.name.trim().toLowerCase() as (typeof FORMATS)[number]),
+    )
+
     // Find or create format section
     let formatSection = page.children.find(
       (n): n is SectionNode => isSection(n) && n.name.toLowerCase() === formatName.toLowerCase(),
     )
+    const isNewFormatSection = !formatSection
     if (!formatSection) {
       formatSection = figma.createSection()
       formatSection.name = normalizedFormat
+      if (existingFormatSections.length > 0) {
+        // Place 5000px to the right of the rightmost format section
+        const rightmostX = Math.max(...existingFormatSections.map((s) => s.x + s.width))
+        formatSection.x = rightmostX + 5000
+        formatSection.y = Math.min(...existingFormatSections.map((s) => s.y))
+      } else {
+        // No format sections yet — place at the selected frames' position
+        const absX = Math.min(...selectedFrames.map((f) => f.absoluteBoundingBox?.x ?? f.x))
+        const absY = Math.min(...selectedFrames.map((f) => f.absoluteBoundingBox?.y ?? f.y))
+        formatSection.x = absX
+        formatSection.y = absY
+      }
     }
     setSectionFill(formatSection, 0.2)
 
@@ -371,8 +415,13 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     fitSectionToChildren(channelSection, PLACE_PADDING)
     fitSectionToChildren(formatSection, PLACE_PADDING)
 
-    // Scroll viewport to show the result
-    figma.viewport.scrollAndZoomIntoView([creativeSection])
+    // Scroll viewport to show the result; select format section if it's the first one ever
+    if (isNewFormatSection && existingFormatSections.length === 0) {
+      figma.currentPage.selection = [formatSection]
+      figma.viewport.scrollAndZoomIntoView([formatSection])
+    } else {
+      figma.viewport.scrollAndZoomIntoView([creativeSection])
+    }
 
     const count = selectedFrames.length
     figma.ui.postMessage({
@@ -388,7 +437,94 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
   }
 
+  if (msg.type === 'align-sections') {
+    const ALIGN_PADDING = 250
+    const ALIGN_GAP = 250
+    const FORMAT_GAP = 5000
+
+    const formatSections: SectionNode[] = []
+
+    for (const topChild of figma.currentPage.children) {
+      if (!isSection(topChild)) continue
+      if (!FORMATS.find((f) => f === topChild.name.trim().toLowerCase())) continue
+      formatSections.push(topChild)
+
+      for (const ch of topChild.children) {
+        if (!isSection(ch)) continue
+
+        for (const pl of ch.children) {
+          if (!isSection(pl)) continue
+
+          // Step 1: fit each creative to its frames (normalises frame positions inside)
+          for (const cr of pl.children) {
+            if (!isSection(cr)) continue
+            fitSectionToChildren(cr, ALIGN_PADDING)
+            setSectionFill(cr, 0.8)
+          }
+
+          // Step 2: reposition creatives horizontally sorted by name
+          const creatives = [...pl.children].filter(isSection) as SectionNode[]
+          creatives.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+          let nextX = ALIGN_PADDING
+          for (const cr of creatives) {
+            cr.x = nextX
+            cr.y = ALIGN_PADDING
+            nextX += cr.width + ALIGN_GAP
+          }
+
+          // Step 3: resize platform to contain repositioned creatives
+          resizeSectionOnly(pl, ALIGN_PADDING)
+          setSectionFill(pl, 0.6)
+        }
+
+        // Step 4: reposition platforms vertically within channel
+        let nextY = ALIGN_PADDING
+        for (const pl of ch.children) {
+          if (!isSection(pl)) continue
+          pl.x = ALIGN_PADDING
+          pl.y = nextY
+          nextY += pl.height + ALIGN_GAP
+        }
+
+        // Step 5: resize channel
+        resizeSectionOnly(ch, ALIGN_PADDING)
+        setSectionFill(ch, 0.4)
+      }
+
+      // Step 6: reposition channels vertically within format
+      let nextY = ALIGN_PADDING
+      for (const ch of topChild.children) {
+        if (!isSection(ch)) continue
+        ch.x = ALIGN_PADDING
+        ch.y = nextY
+        nextY += ch.height + ALIGN_GAP
+      }
+
+      // Step 7: resize format section
+      resizeSectionOnly(topChild, ALIGN_PADDING)
+      setSectionFill(topChild, 0.2)
+    }
+
+    // Step 8: reposition format sections horizontally on the page with FORMAT_GAP, aligned to top edge
+    formatSections.sort((a, b) => a.x - b.x)
+    const topY = Math.min(...formatSections.map((s) => s.y))
+    let nextX = formatSections[0]?.x ?? 0
+    for (const fmt of formatSections) {
+      fmt.x = nextX
+      fmt.y = topY
+      nextX += fmt.width + FORMAT_GAP
+    }
+
+    if (formatSections.length > 0) {
+      figma.currentPage.selection = formatSections
+      figma.viewport.scrollAndZoomIntoView(formatSections)
+    }
+
+    figma.ui.postMessage({ type: 'align-done' })
+  }
+
   if (msg.type === 'rename-frames') {
+    isExporting = true
     // Rename all frames to their dimensions (e.g. "1080x1920")
     for (const item of exportItems) {
       for (const nodeId of item.nodeIds) {
@@ -420,10 +556,44 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     if (index < exportItems.length) {
       await sendFrame(index)
     } else {
+      isExporting = false
       figma.ui.postMessage({ type: 'export-complete' })
     }
   }
 }
+
+// Debounced auto-rescan on document changes (section added/removed/renamed).
+// documentchange requires loadAllPagesAsync to be called first.
+function isOnCurrentPage(node: BaseNode): boolean {
+  let n: BaseNode | null = node
+  while (n) {
+    if (n.type === 'PAGE') return n.id === figma.currentPage.id
+    n = n.parent
+  }
+  // Detached node (e.g. just deleted) — conservatively treat as current page
+  return true
+}
+
+let rescanTimer: ReturnType<typeof setTimeout> | null = null
+;(async () => {
+  await figma.loadAllPagesAsync()
+  figma.on('documentchange', (event) => {
+    if (isExporting) return
+    const relevant = event.documentChanges.some((change) => {
+      const node = (change as unknown as { node?: BaseNode }).node
+      return node ? isOnCurrentPage(node) : false
+    })
+    if (!relevant) return
+    if (rescanTimer) clearTimeout(rescanTimer)
+    rescanTimer = setTimeout(() => {
+      rescanTimer = null
+      const result = scanPage()
+      exportItems = result.items
+      figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
+      figma.ui.postMessage({ type: 'sections-data', sections: getAllSections() })
+    }, 500)
+  })
+})()
 
 figma.on('selectionchange', () => {
   const frames = figma.currentPage.selection.filter(isFrame)
