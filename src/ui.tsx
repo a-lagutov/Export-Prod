@@ -848,15 +848,15 @@ function App() {
   const [progress, setProgress] = useState({ current: 0, total: 0, text: '' })
   const [zipBlob, setZipBlob] = useState<Blob | null>(null)
   const [search, setSearch] = useState('')
-  const [pathMode, setPathMode] = useState<'with-format' | 'without-format'>('with-format')
 
   // Refs for access inside async message handlers without stale closure issues
   const itemsRef = useRef<ExportItem[]>([])
   const platformSizesRef = useRef<Record<string, string>>({})
   const frameSizesRef = useRef<Record<string, string>>({})
   const gifDelayRef = useRef('3')
-  const pathModeRef = useRef<'with-format' | 'without-format'>('with-format')
   const cancelledRef = useRef(false)
+  const activeCountRef = useRef(0)
+  const exportFilterRef = useRef<{ format?: string; platform?: string } | null>(null)
   const exportedFilesRef = useRef<string[]>([])
   const zipRef = useRef<JSZip | null>(null)
   const exportStartTimeRef = useRef<number>(0)
@@ -874,22 +874,19 @@ function App() {
   useEffect(() => {
     gifDelayRef.current = gifDelay
   }, [gifDelay])
-  useEffect(() => {
-    pathModeRef.current = pathMode
-  }, [pathMode])
 
   function resolvePath(path: string): string {
-    return pathModeRef.current === 'without-format' ? path.split('/').slice(1).join('/') : path
+    return path.split('/').slice(1).join('/')
   }
 
-  function getLimit(item: ExportItem): number | null {
+  function getLimit(fileName: string, format: string, platformName: string): number | null {
     const fSizes = frameSizesRef.current
     const pSizes = platformSizesRef.current
-    const frameKey = item.path.split('/').pop()! + '_' + item.format
+    const frameKey = fileName + '_' + format
     if (fSizes[frameKey] && parseFloat(fSizes[frameKey]) > 0) {
       return parseFloat(fSizes[frameKey]) * 1024 * 1024
     }
-    const platKey = `${item.format}/${item.platformName}`
+    const platKey = `${format}/${platformName}`
     if (pSizes[platKey] && parseFloat(pSizes[platKey]) > 0) {
       return parseFloat(pSizes[platKey]) * 1024 * 1024
     }
@@ -917,20 +914,20 @@ function App() {
 
       if (msg.type === 'rename-done') {
         cancelledRef.current = false
-        setProgress({ current: 0, total: itemsRef.current.length, text: 'Начинаем экспорт...' })
+        setProgress({ current: 0, total: activeCountRef.current, text: 'Начинаем экспорт...' })
         parent.postMessage({ pluginMessage: { type: 'start-export' } }, '*')
       }
 
       if (msg.type === 'frame-data') {
-        const { index, total, path, format, pngBytes } = msg as {
+        const { index, total, path, format, pngBytes, platformName } = msg as {
           index: number
           total: number
           path: string
           format: string
           pngBytes: ArrayBuffer
+          platformName: string
         }
-        const item = itemsRef.current[index]
-        const limit = getLimit(item)
+        const limit = getLimit(path.split('/').pop()!, format, platformName)
         setProgress({ current: index + 1, total, text: `Обработка ${index + 1}/${total}: ${path}` })
         try {
           const blob = await convertFrame(new Uint8Array(pngBytes), format, limit)
@@ -947,16 +944,16 @@ function App() {
       }
 
       if (msg.type === 'gif-data') {
-        const { index, total, path, frames, width, height } = msg as {
+        const { index, total, path, frames, width, height, platformName } = msg as {
           index: number
           total: number
           path: string
           frames: ArrayBuffer[]
           width: number
           height: number
+          platformName: string
         }
-        const item = itemsRef.current[index]
-        const limit = getLimit(item)
+        const limit = getLimit(path.split('/').pop()!, 'gif', platformName)
         const delay = parseFloat(gifDelayRef.current) * 1000 || 3000
         setProgress({
           current: index + 1,
@@ -990,7 +987,7 @@ function App() {
             text: `Готово! Размер: ${(blob.size / 1024 / 1024).toFixed(2)} МБ`,
           }))
           track('export_completed', {
-            frame_count: itemsRef.current.length,
+            frame_count: activeCountRef.current,
             duration_ms: Date.now() - exportStartTimeRef.current,
             zip_size_mb: parseFloat((blob.size / 1024 / 1024).toFixed(2)),
           })
@@ -1008,21 +1005,38 @@ function App() {
     parent.postMessage({ pluginMessage: { type: 'scan' } }, '*')
   }
 
-  function handleExport() {
+  function handleExport(filter?: { format?: string; platform?: string }) {
+    const activeCount = filter
+      ? items.filter(
+          (i) =>
+            (!filter.format || i.format === filter.format) &&
+            (!filter.platform || i.platformName === filter.platform),
+        ).length
+      : items.length
+    activeCountRef.current = activeCount
+    exportFilterRef.current = filter ?? null
     zipRef.current = new JSZip()
     exportedFilesRef.current = []
     exportStartTimeRef.current = Date.now()
     setZipBlob(null)
     setPhase('exporting')
-    setProgress({ current: 0, total: items.length, text: 'Переименование фреймов...' })
-    track('export_started', { frame_count: items.length })
-    // Rename frames to their dimensions, then start export
-    parent.postMessage({ pluginMessage: { type: 'rename-frames' } }, '*')
+    setProgress({ current: 0, total: activeCount, text: 'Переименование фреймов...' })
+    track('export_started', { frame_count: activeCount })
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: 'rename-frames',
+          filterFormat: filter?.format,
+          filterPlatform: filter?.platform,
+        },
+      },
+      '*',
+    )
   }
 
   function handleCancel() {
     track('export_cancelled', {
-      frame_count: itemsRef.current.length,
+      frame_count: activeCountRef.current,
       completed: progress.current,
       duration_ms: Date.now() - exportStartTimeRef.current,
     })
@@ -1033,9 +1047,14 @@ function App() {
 
   function handleDownload() {
     if (!zipBlob) return
+    const filter = exportFilterRef.current
+    let name = 'export-prod'
+    if (filter?.format) name += `-${filter.format}`
+    if (filter?.platform)
+      name += `-${filter.platform.toLowerCase().replace(/[\s/\\:*?"<>|]+/g, '-')}`
     const a = document.createElement('a')
     a.href = URL.createObjectURL(zipBlob)
-    a.download = 'export-prod.zip'
+    a.download = `${name}.zip`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1163,13 +1182,64 @@ function App() {
           >
             {formatPlatforms.map(({ format, platforms }) => (
               <Fragment key={format}>
-                <TagBadge format={format} />
-                <VerticalSpace space="extraSmall" />
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <button
+                    onClick={() => !isExporting && handleExport({ format })}
+                    disabled={isExporting}
+                    title={`Экспортировать только ${format.toUpperCase()}`}
+                    style={{
+                      padding: '2px 8px',
+                      fontSize: 10,
+                      border: '1px solid var(--figma-color-border)',
+                      borderRadius: 4,
+                      background: 'var(--figma-color-bg-secondary)',
+                      color: isExporting
+                        ? 'var(--figma-color-text-disabled)'
+                        : 'var(--figma-color-text)',
+                      cursor: isExporting ? 'default' : 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ↓
+                  </button>
+                  <TagBadge format={format} />
+                </div>
                 {platforms.map((name) => (
                   <div
                     key={name}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
                   >
+                    <button
+                      onClick={() => !isExporting && handleExport({ format, platform: name })}
+                      disabled={isExporting}
+                      title={`Экспортировать ${format.toUpperCase()} / ${name}`}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        padding: 0,
+                        fontSize: 12,
+                        border: '1px solid var(--figma-color-border)',
+                        borderRadius: 4,
+                        background: 'var(--figma-color-bg-secondary)',
+                        color: isExporting
+                          ? 'var(--figma-color-text-disabled)'
+                          : 'var(--figma-color-text)',
+                        cursor: isExporting ? 'default' : 'pointer',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      ↓
+                    </button>
                     <div style={{ flex: 1 }}>
                       <Text>{name}</Text>
                     </div>
@@ -1200,16 +1270,6 @@ function App() {
         </Fragment>
       )}
 
-      {/* Path mode */}
-      <VerticalSpace space="small" />
-      <SegmentedControl
-        value={pathMode}
-        options={[
-          { value: 'with-format', label: 'Формат/Канал/Площадка/Креатив' },
-          { value: 'without-format', label: 'Канал/Площадка/Креатив' },
-        ]}
-        onChange={setPathMode}
-      />
       {/* Export button */}
       {!isExporting && phase !== 'done' && (
         <Fragment>

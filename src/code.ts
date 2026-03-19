@@ -525,6 +525,8 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
 
   if (msg.type === 'rename-frames') {
     isExporting = true
+    const filterFormat = (msg.filterFormat as string | undefined)?.toLowerCase()
+    const filterPlatform = msg.filterPlatform as string | undefined
     // Rename all frames to their dimensions (e.g. "1080x1920")
     for (const item of exportItems) {
       for (const nodeId of item.nodeIds) {
@@ -538,6 +540,13 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     // Re-scan to update tree with new names
     const result = scanPage()
     exportItems = result.items
+    if (filterFormat || filterPlatform) {
+      exportItems = exportItems.filter(
+        (item) =>
+          (!filterFormat || item.format === filterFormat) &&
+          (!filterPlatform || item.platformName === filterPlatform),
+      )
+    }
     figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
     figma.ui.postMessage({ type: 'rename-done' })
   }
