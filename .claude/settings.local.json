@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.figma.com)",
+      "WebFetch(domain:developers.figma.com)",
+      "WebFetch(domain:stuk.github.io)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
