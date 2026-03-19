@@ -847,6 +847,8 @@ function App() {
   const [gifDelay, setGifDelay] = useState('3')
   const [progress, setProgress] = useState({ current: 0, total: 0, text: '' })
   const [zipBlob, setZipBlob] = useState<Blob | null>(null)
+  const [zipSizeMb, setZipSizeMb] = useState(0)
+  const [exportedCount, setExportedCount] = useState(0)
   const [search, setSearch] = useState('')
 
   // Refs for access inside async message handlers without stale closure issues
@@ -980,12 +982,9 @@ function App() {
         zipRef.current?.file('preview.html', previewHtml)
         zipRef.current?.generateAsync({ type: 'blob' }).then((blob) => {
           setZipBlob(blob)
+          setZipSizeMb(parseFloat((blob.size / 1024 / 1024).toFixed(2)))
+          setExportedCount(exportedFilesRef.current.length)
           setPhase('done')
-          setProgress((p) => ({
-            ...p,
-            current: p.total,
-            text: `Готово! Размер: ${(blob.size / 1024 / 1024).toFixed(2)} МБ`,
-          }))
           track('export_completed', {
             frame_count: activeCountRef.current,
             duration_ms: Date.now() - exportStartTimeRef.current,
@@ -1283,7 +1282,7 @@ function App() {
       )}
 
       {/* Progress + cancel */}
-      {(isExporting || phase === 'done') && (
+      {isExporting && (
         <Fragment>
           <VerticalSpace space="small" />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1330,7 +1329,8 @@ function App() {
         <Fragment>
           <VerticalSpace space="small" />
           <Button fullWidth onClick={handleDownload}>
-            Скачать ZIP
+            Скачать ZIP · {zipSizeMb} МБ · {exportedCount}{' '}
+            {declension(exportedCount, 'файл', 'файла', 'файлов')}
           </Button>
           <VerticalSpace space="extraSmall" />
           <div style={{ textAlign: 'center' }}>
