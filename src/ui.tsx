@@ -975,6 +975,8 @@ function App() {
 
       if (msg.type === 'export-complete') {
         setProgress((p) => ({ ...p, text: 'Создание ZIP...' }))
+        const previewHtml = buildPreviewHtml(exportedFilesRef.current)
+        zipRef.current?.file('preview.html', previewHtml)
         zipRef.current?.generateAsync({ type: 'blob' }).then((blob) => {
           setZipBlob(blob)
           setPhase('done')
@@ -1023,17 +1025,6 @@ function App() {
     cancelledRef.current = true
     setPhase('ready')
     setProgress({ current: 0, total: 0, text: '' })
-  }
-
-  function handleDownloadPreview() {
-    const html = buildPreviewHtml(exportedFilesRef.current)
-    const blob = new Blob([html], { type: 'text/html' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'preview.html'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
   }
 
   function handleDownload() {
@@ -1276,10 +1267,6 @@ function App() {
           <VerticalSpace space="small" />
           <Button fullWidth onClick={handleDownload}>
             Скачать ZIP
-          </Button>
-          <VerticalSpace space="extraSmall" />
-          <Button fullWidth secondary onClick={handleDownloadPreview}>
-            Скачать превью HTML
           </Button>
           <VerticalSpace space="extraSmall" />
           <div style={{ textAlign: 'center' }}>
