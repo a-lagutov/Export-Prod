@@ -34,6 +34,16 @@ Gitignored (local overrides): `.env.local`, `.env.*.local`
 
 If a variable is absent, it defaults to an empty string and analytics are silently disabled.
 
+### GitHub Actions Secrets
+
+Gitignored variables that must be present in release builds are passed via GitHub environment secrets. The workflow uses `environment: production` — secrets live in Settings → Environments → production. The workflow reads them as `${{ secrets.VAR_NAME }}` and passes them as `env:` to the build step.
+
+| Secret | Environment | Purpose |
+|---|---|---|
+| `POSTHOG_KEY` | `production` | Analytics key — must match `.env.production.local` locally |
+
+When adding a new gitignored variable that should be present in production builds: add it to the `env:` block of the `npm run build` step in `.github/workflows/release.yml` and add the corresponding secret in Settings → Environments → production.
+
 ## Architecture
 
 **Two-thread Figma plugin model:**
