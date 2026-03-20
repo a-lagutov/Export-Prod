@@ -35,13 +35,24 @@ function loadEnv(mode) {
   return result
 }
 
+const { execSync } = require('child_process')
+
 const mode = process.env.NODE_ENV || 'production'
 const env = loadEnv(mode)
+
+let version
+try {
+  version = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim()
+} catch {
+  version = require('../package.json').version
+}
 
 // Inject POSTHOG_* vars as __VAR__ constants; always defined (empty string = analytics disabled)
 const envDefine = Object.fromEntries(
   ['POSTHOG_KEY', 'POSTHOG_HOST'].map((k) => [`__${k}__`, JSON.stringify(env[k] ?? '')])
 )
+envDefine['__VERSION__'] = JSON.stringify(version)
+envDefine['__DEV__'] = JSON.stringify(mode === 'development')
 
 async function build() {
   // 1. Bundle code.ts → dist/code.js

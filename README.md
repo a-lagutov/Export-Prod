@@ -17,11 +17,9 @@ In Figma: **Plugins → Development → Import plugin from manifest** → select
 ### Development
 
 ```bash
-npm run watch   # Rebuild code.ts on changes (NODE_ENV=development)
+npm run watch   # Watch mode: rebuilds code.ts + ui.tsx on changes (NODE_ENV=development)
 npm run build   # Full build (code.ts + ui.tsx → dist/, NODE_ENV=production)
 ```
-
-> `watch` does not rebuild `ui.html`. When changing `src/ui.tsx`, use full `npm run build`.
 
 #### Environment variables
 
@@ -29,11 +27,12 @@ Env files follow CRA priority order and are injected at build time.
 
 | Variable | File | Purpose |
 |---|---|---|
-| `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key |
+| `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key for production |
+| `POSTHOG_KEY` | `.env.development.local` (gitignored) | Analytics key for development (events marked `is_test_user: true`) |
 | `POSTHOG_HOST` | `.env` | Analytics host; also sets `networkAccess.allowedDomains` in `dist/manifest.json` |
 | `PLUGIN_NAME` | `.env` | Plugin display name in Figma; sets `name` in `dist/manifest.json` |
 
-Create `.env.production.local` with your PostHog key:
+Create `.env.production.local` (and optionally `.env.development.local`) with your PostHog key:
 
 ```
 POSTHOG_KEY=phc_...
@@ -165,11 +164,9 @@ Figma-плагин для пакетного экспорта фреймов в 
 ### Разработка
 
 ```bash
-npm run watch   # Пересборка code.ts при изменениях (NODE_ENV=development)
+npm run watch   # Watch-режим: пересборка code.ts + ui.tsx при изменениях (NODE_ENV=development)
 npm run build   # Полная сборка (code.ts + ui.tsx → dist/, NODE_ENV=production)
 ```
-
-> `watch` не пересобирает `ui.html`. При изменении `src/ui.tsx` нужен полный `npm run build`.
 
 #### Переменные окружения
 
@@ -177,11 +174,12 @@ Env-файлы загружаются в порядке приоритета (к
 
 | Переменная | Файл | Назначение |
 |---|---|---|
-| `POSTHOG_KEY` | `.env.production.local` (в gitignore) | Ключ аналитики |
+| `POSTHOG_KEY` | `.env.production.local` (в gitignore) | Ключ аналитики для продакшна |
+| `POSTHOG_KEY` | `.env.development.local` (в gitignore) | Ключ аналитики для разработки (события помечаются `is_test_user: true`) |
 | `POSTHOG_HOST` | `.env` | Хост аналитики; также задаёт `networkAccess.allowedDomains` в `dist/manifest.json` |
 | `PLUGIN_NAME` | `.env` | Отображаемое имя плагина в Figma; задаёт `name` в `dist/manifest.json` |
 
-Создайте `.env.production.local` с вашим ключом PostHog:
+Создайте `.env.production.local` (и при необходимости `.env.development.local`) с вашим ключом PostHog:
 
 ```
 POSTHOG_KEY=phc_...

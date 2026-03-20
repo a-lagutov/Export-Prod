@@ -10,7 +10,7 @@ A Figma plugin ("Export Prod") for batch-exporting frames as JPG, PNG, WebP, or 
 
 ```bash
 npm run build     # Full build: code.ts + ui.tsx → dist/ (NODE_ENV=production)
-npm run watch     # Watch mode for code.ts only (NODE_ENV=development, does NOT rebuild ui.html)
+npm run watch     # Watch mode: rebuilds both code.ts and ui.tsx on changes (NODE_ENV=development)
 ```
 
 Linting and formatting are configured via ESLint + Prettier with a Husky pre-commit hook. Run `npm run prepare` once after cloning to activate the hook.
@@ -27,7 +27,8 @@ Gitignored (local overrides): `.env.local`, `.env.*.local`
 
 | Variable | Where | Purpose |
 |---|---|---|
-| `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key |
+| `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key for production |
+| `POSTHOG_KEY` | `.env.development.local` (gitignored) | Analytics key for development |
 | `POSTHOG_HOST` | `.env` (committed) | Analytics host; also injected into `dist/manifest.json` → `networkAccess.allowedDomains` |
 | `PLUGIN_NAME` | `.env` (committed) | Plugin display name in Figma; injected into `dist/manifest.json` → `name` |
 
@@ -43,7 +44,7 @@ If a variable is absent, it defaults to an empty string and analytics are silent
 **Build pipeline (`scripts/build.js`):**
 1. esbuild bundles `src/code.ts` → `dist/code.js`
 2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
-3. Loads env files via `scripts/env.js` (CRA priority order), injects `POSTHOG_*` vars as `__VAR__` constants
+3. Loads env files (CRA priority order), injects `POSTHOG_*` vars as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
 4. esbuild bundles `src/ui.tsx` → `dist/ui.js` + `dist/ui.css` (JSX via preact/jsx-runtime)
 5. Inlines `dist/ui.js` and `dist/ui.css` into `dist/ui.html`
 6. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`)
@@ -102,7 +103,9 @@ PostHog EU, fire-and-forget via fetch. Key and host injected at build time — n
 
 **Note:** Figma plugin UI runs in a `data:` URL iframe — `localStorage` is blocked. The `distinct_id` is a session-scoped random ID (regenerated each plugin open).
 
-Tracked events: `plugin_opened`, `export_started`, `export_completed`, `export_cancelled`, `export_error`.
+Every event includes `version` (git tag, e.g. `v1.3.0`). In dev mode (`__DEV__ = true`), events also include `$set: { is_test_user: true }` for filtering in PostHog.
+
+Tracked events: `plugin_opened`, `export_started`, `export_completed`, `export_cancelled`, `export_error`, `frames_placed`.
 
 ## Releases
 

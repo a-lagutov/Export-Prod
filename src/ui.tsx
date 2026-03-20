@@ -1716,6 +1716,14 @@ function OrganizePage() {
 
   function doPlace(fmt: string, ch: string, pl: string, cr: string) {
     setResult(null)
+    track('frames_placed', {
+      format: fmt,
+      channel: ch,
+      platform: pl,
+      creative: cr,
+      frame_count: selectedCount,
+      input_mode: inputMode,
+    })
     parent.postMessage(
       {
         pluginMessage: {

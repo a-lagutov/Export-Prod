@@ -24,10 +24,21 @@ function loadEnv(mode) {
   return result
 }
 
+const { execSync } = require('child_process')
+
 const env = loadEnv('development')
 const envDefine = Object.fromEntries(
   ['POSTHOG_KEY', 'POSTHOG_HOST'].map((k) => [`__${k}__`, JSON.stringify(env[k] ?? '')])
 )
+
+let version
+try {
+  version = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim()
+} catch {
+  version = require('../package.json').version
+}
+envDefine['__VERSION__'] = JSON.stringify(version)
+envDefine['__DEV__'] = JSON.stringify(true)
 
 const gifWorkerContent = fs.readFileSync(
   path.join(root, 'node_modules/gif.js/dist/gif.worker.js'),

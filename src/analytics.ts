@@ -1,6 +1,8 @@
 // PostHog analytics — fire-and-forget, injected at build time via esbuild define
 declare const __POSTHOG_KEY__: string
 declare const __POSTHOG_HOST__: string
+declare const __VERSION__: string
+declare const __DEV__: boolean
 
 // Figma plugin UI runs in a data: URL — localStorage is unavailable.
 // Use a session-scoped ID (a new ID per plugin open is acceptable for analytics).
@@ -15,7 +17,11 @@ export function track(event: string, props?: Record<string, unknown>): void {
       api_key: __POSTHOG_KEY__,
       event,
       distinct_id: SESSION_ID,
-      properties: props,
+      properties: {
+        version: __VERSION__,
+        ...(__DEV__ ? { $set: { is_test_user: true } } : {}),
+        ...props,
+      },
     }),
   }).catch(() => {})
 }
