@@ -29,7 +29,7 @@ jobs:
           VERSION="${VERSION%%[^0-9.]*}"
           # Pad to semver (e.g. "1.3" → "1.3.0") so npm version accepts it
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]] && VERSION="${VERSION}.0"
-          npm version "$VERSION" --no-git-tag-version
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
