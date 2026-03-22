@@ -224,13 +224,6 @@ let isExporting = false
 
 figma.showUI(__html__, { width: 400, height: 560, themeColors: true })
 
-// Auto-scan on plugin open
-{
-  const result = scanPage()
-  exportItems = result.items
-  figma.ui.postMessage({ type: 'scan-result', tree: result.tree, items: result.items })
-}
-
 // Re-scan when page changes
 figma.on('currentpagechange', () => {
   const result = scanPage()

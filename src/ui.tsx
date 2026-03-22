@@ -1008,6 +1008,8 @@ function App() {
     }
 
     window.addEventListener('message', handler)
+    // Request initial scan now that the listener is registered
+    parent.postMessage({ pluginMessage: { type: 'scan' } }, '*')
     return () => window.removeEventListener('message', handler)
   }, [])
 

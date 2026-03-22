@@ -56,6 +56,8 @@ When adding a new gitignored variable that should be present in production build
 - `src/code.ts` — Main thread (Figma sandbox). Scans the page tree, exports frame pixels as PNG bytes, sends them to the UI one at a time via `postMessage`.
 - `src/ui.tsx` — UI thread (iframe, Preact). Receives PNG bytes, converts to the target format, applies compression to meet size limits, assembles GIFs, builds the ZIP, and triggers download.
 
+**Initialization handshake:** `code.ts` does NOT push `scan-result` on startup — the UI iframe may not have registered its message listener yet (race condition). Instead, the UI sends `{ type: 'scan' }` from its `useEffect` once the listener is registered, and `code.ts` responds. The same pull pattern applies to `get-sections` in the Place tab. Never switch back to push-on-startup for initial data.
+
 **Build pipeline (`scripts/build.js`):**
 1. esbuild bundles `src/code.ts` → `dist/code.js`
 2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
