@@ -110,7 +110,11 @@ The Export button is always visible at the bottom of the window. After export co
 
 #### File Size Limits
 
-Limits are set in the plugin interface — globally per platform or individually per frame (in MB). Per-frame limits are accessed via the **Ресайзы** button, which opens a dedicated screen with the full frame tree (all nodes expanded by default). The button shows the total frame count.
+Limits are set in the plugin interface — globally per platform or individually per frame (in MB). Per-frame limits are accessed via the **Ресайзы** button, which opens a dedicated screen. The button shows the total frame count.
+
+The screen has a search field and two view modes toggled by icons in the header:
+- **Tree** — collapsible hierarchy (Format → Channel → Platform → Creative → frames), all nodes expanded by default.
+- **Table** — flat list with a sticky header (Format / Creative / Size / Limit columns). Hovering a row shows the full path (channel › platform › creative) as a tooltip.
 
 #### Compression Algorithm
 
@@ -267,7 +271,11 @@ xxxx-yyy
 
 #### Лимиты размера
 
-Лимиты задаются в интерфейсе плагина — глобально по площадке или отдельно для каждого фрейма (в МБ). Лимиты по фреймам доступны через кнопку **Ресайзы**, которая открывает отдельный экран с полным деревом фреймов (все узлы раскрыты по умолчанию). На кнопке отображается общее количество файлов.
+Лимиты задаются в интерфейсе плагина — глобально по площадке или отдельно для каждого фрейма (в МБ). Лимиты по фреймам доступны через кнопку **Ресайзы**, которая открывает отдельный экран. На кнопке отображается общее количество файлов.
+
+На экране есть строка поиска и два режима отображения, переключаемых иконками в заголовке:
+- **Дерево** — раскрываемая иерархия (Формат → Канал → Площадка → Креатив → фреймы), все узлы раскрыты по умолчанию.
+- **Таблица** — плоский список с прилипающей шапкой (Формат / Креатив / Ресайз / Лимит). При наведении на строку отображается полный путь (канал › площадка › креатив) как подсказка.
 
 #### Алгоритм сжатия
 

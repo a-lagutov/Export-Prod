@@ -406,6 +406,30 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
   )
 }
 
+// ── View toggle icons ─────────────────────────────────────────────────────────
+
+function TreeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <line x1="3" y1="2" x2="3" y2="12" stroke="currentColor" strokeWidth="1.4" />
+      <line x1="3" y1="3.5" x2="7" y2="3.5" stroke="currentColor" strokeWidth="1.4" />
+      <line x1="3" y1="7" x2="9.5" y2="7" stroke="currentColor" strokeWidth="1.4" />
+      <line x1="3" y1="10.5" x2="12" y2="10.5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+function TableIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="1.5" y1="5" x2="12.5" y2="5" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="1.5" y1="9" x2="12.5" y2="9" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="5" y1="5" x2="5" y2="12.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  )
+}
+
 // ── Tree filtering ───────────────────────────────────────────────────────────
 
 function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
@@ -431,6 +455,60 @@ function filterNode(node: TreeNode, query: string): TreeNode | null {
     return { ...node, children: filteredChildren }
   }
   return nameMatches ? { ...node, children: [] } : null
+}
+
+// ── Flat table rows ───────────────────────────────────────────────────────────
+
+interface FlatRow {
+  key: string
+  formatTag: string
+  channel: string
+  platform: string
+  creative: string
+  frameName: string
+  gifFrameInfo?: string
+}
+
+function flattenToRows(nodes: TreeNode[]): FlatRow[] {
+  const rows: FlatRow[] = []
+  for (const fmt of nodes) {
+    const formatTag = fmt.name.toLowerCase()
+    for (const ch of fmt.children ?? []) {
+      for (const pl of ch.children ?? []) {
+        for (const cr of pl.children ?? []) {
+          for (const fr of cr.children ?? []) {
+            if (fr.type === 'frame') {
+              const gifInfo =
+                formatTag === 'gif' ? fr.size?.match(/\(\d+ frames?\)/)?.[0] : undefined
+              rows.push({
+                key: `${fr.name}_${formatTag}`,
+                formatTag,
+                channel: ch.name,
+                platform: pl.name,
+                creative: cr.name,
+                frameName: fr.name.replace(/\.[^.]+$/, ''),
+                gifFrameInfo: gifInfo,
+              })
+            }
+          }
+        }
+      }
+    }
+  }
+  return rows
+}
+
+function filterFlatRows(rows: FlatRow[], query: string): FlatRow[] {
+  if (!query) return rows
+  const q = query.toLowerCase()
+  return rows.filter(
+    (r) =>
+      r.frameName.toLowerCase().includes(q) ||
+      r.formatTag.includes(q) ||
+      r.channel.toLowerCase().includes(q) ||
+      r.platform.toLowerCase().includes(q) ||
+      r.creative.toLowerCase().includes(q),
+  )
 }
 
 // ── Tree node ─────────────────────────────────────────────────────────────────
@@ -519,6 +597,118 @@ function FrameRow({
           background: 'var(--figma-color-bg-secondary)',
           color: 'var(--figma-color-text)',
           flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          fontSize: 10,
+          color: 'var(--figma-color-text-disabled)',
+          userSelect: 'none',
+          flexShrink: 0,
+        }}
+      >
+        МБ
+      </span>
+    </div>
+  )
+}
+
+function TableRow({
+  row,
+  frameSizes,
+  onFrameSizeChange,
+}: {
+  row: FlatRow
+  frameSizes: Record<string, string>
+  onFrameSizeChange: (key: string, value: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [hovered, setHovered] = useState(false)
+
+  function handleInput(e: Event) {
+    const el = e.target as HTMLInputElement
+    const raw = el.value
+    const filtered = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
+    const dotIdx = filtered.indexOf('.')
+    const sanitized =
+      dotIdx === -1
+        ? filtered
+        : filtered.slice(0, dotIdx + 1) + filtered.slice(dotIdx + 1).replace(/\./g, '')
+    if (sanitized !== raw) el.value = sanitized
+    onFrameSizeChange(row.key, sanitized)
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '3px 12px',
+        background: hovered ? 'var(--figma-color-bg-hover)' : 'transparent',
+        cursor: 'default',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => inputRef.current?.focus()}
+    >
+      <div style={{ flexShrink: 0 }}>
+        <TagBadge format={row.formatTag} />
+      </div>
+      <span
+        style={{
+          flex: 1,
+          fontSize: 11,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          minWidth: 0,
+          color: 'var(--figma-color-text)',
+        }}
+        title={`${row.channel} › ${row.platform} › ${row.creative}`}
+      >
+        {row.creative}
+      </span>
+      <span
+        style={{
+          width: 64,
+          flexShrink: 0,
+          fontSize: 11,
+          color: 'var(--figma-color-text-secondary)',
+          textAlign: 'right',
+        }}
+      >
+        {row.frameName}
+        {row.gifFrameInfo && (
+          <span style={{ fontSize: 9, marginLeft: 2, color: 'var(--figma-color-text-tertiary)' }}>
+            {row.gifFrameInfo}
+          </span>
+        )}
+      </span>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        placeholder="0"
+        value={frameSizes[row.key] ?? ''}
+        onChange={handleInput}
+        onBlur={() => {
+          let v = frameSizes[row.key] ?? ''
+          if (v.endsWith('.')) v = v.slice(0, -1)
+          if (v !== '' && parseFloat(v) <= 0) v = ''
+          if (v !== (frameSizes[row.key] ?? '')) onFrameSizeChange(row.key, v)
+        }}
+        style={{
+          width: 48,
+          flexShrink: 0,
+          border: '1px solid var(--figma-color-border)',
+          borderRadius: 4,
+          padding: '2px 4px',
+          fontSize: 10,
+          background: 'var(--figma-color-bg-secondary)',
+          color: 'var(--figma-color-text)',
+          textAlign: 'right',
+          outline: 'none',
         }}
       />
       <span
@@ -857,6 +1047,7 @@ function App() {
     platform?: string
   } | null>(null)
   const [search, setSearch] = useState('')
+  const [resizeLimitsView, setResizeLimitsView] = useState<'tree' | 'table'>('tree')
 
   // Refs for access inside async message handlers without stale closure issues
   const itemsRef = useRef<ExportItem[]>([])
@@ -1074,6 +1265,8 @@ function App() {
   }
 
   const filteredTree = useMemo(() => filterTree(tree, search), [tree, search])
+  const flatRows = useMemo(() => flattenToRows(tree), [tree])
+  const filteredFlatRows = useMemo(() => filterFlatRows(flatRows, search), [flatRows, search])
 
   const formatPlatforms = useMemo(() => {
     const map: Record<string, Set<string>> = {}
@@ -1148,25 +1341,138 @@ function App() {
               ←
             </span>
             <span style={{ fontWeight: 600, fontSize: 13 }}>Лимиты по ресайзам</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 0 }}>
+              {(
+                [
+                  { key: 'tree', icon: <TreeIcon /> },
+                  { key: 'table', icon: <TableIcon /> },
+                ] as const
+              ).map(({ key, icon }, idx) => (
+                <button
+                  key={key}
+                  onClick={() => setResizeLimitsView(key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 26,
+                    height: 22,
+                    border: '1px solid var(--figma-color-border)',
+                    borderLeft: idx > 0 ? 'none' : '1px solid var(--figma-color-border)',
+                    borderRadius: idx === 0 ? '4px 0 0 4px' : '0 4px 4px 0',
+                    background:
+                      resizeLimitsView === key
+                        ? 'var(--figma-color-bg-selected)'
+                        : 'var(--figma-color-bg)',
+                    color:
+                      resizeLimitsView === key
+                        ? 'var(--figma-color-text)'
+                        : 'var(--figma-color-text-secondary)',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{ padding: '0 12px 6px' }}>
             <SearchInput value={search} onChange={setSearch} />
           </div>
         </div>
 
-        {/* Tree */}
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '0 12px 12px' }}>
-          {filteredTree.length > 0 ? (
-            filteredTree.map((node, i) => (
-              <TreeNodeView
-                key={i}
-                node={node}
-                formatTag=""
-                frameSizes={frameSizes}
-                onFrameSizeChange={(key, val) => setFrameSizes((prev) => ({ ...prev, [key]: val }))}
-                defaultExpanded={true}
-              />
-            ))
+        {/* Tree / Table */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            minHeight: 0,
+            padding: resizeLimitsView === 'tree' ? '0 12px 12px' : '0 0 12px',
+          }}
+        >
+          {resizeLimitsView === 'tree' ? (
+            filteredTree.length > 0 ? (
+              filteredTree.map((node, i) => (
+                <TreeNodeView
+                  key={i}
+                  node={node}
+                  formatTag=""
+                  frameSizes={frameSizes}
+                  onFrameSizeChange={(key, val) =>
+                    setFrameSizes((prev) => ({ ...prev, [key]: val }))
+                  }
+                  defaultExpanded={true}
+                />
+              ))
+            ) : (
+              <div style={{ padding: 12, textAlign: 'center' }}>
+                <Muted>Ничего не найдено</Muted>
+              </div>
+            )
+          ) : filteredFlatRows.length > 0 ? (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '3px 12px',
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--figma-color-bg)',
+                  zIndex: 1,
+                  borderBottom: '1px solid var(--figma-color-border)',
+                }}
+              >
+                <span
+                  style={{ width: 36, fontSize: 10, color: 'var(--figma-color-text-tertiary)' }}
+                >
+                  Формат
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    fontSize: 10,
+                    color: 'var(--figma-color-text-tertiary)',
+                    minWidth: 0,
+                  }}
+                >
+                  Креатив
+                </span>
+                <span
+                  style={{
+                    width: 64,
+                    fontSize: 10,
+                    color: 'var(--figma-color-text-tertiary)',
+                    textAlign: 'right',
+                  }}
+                >
+                  Ресайз
+                </span>
+                <span
+                  style={{
+                    width: 48,
+                    fontSize: 10,
+                    color: 'var(--figma-color-text-tertiary)',
+                    textAlign: 'right',
+                  }}
+                >
+                  Лимит
+                </span>
+                <span style={{ width: 20 }} />
+              </div>
+              {filteredFlatRows.map((row, i) => (
+                <TableRow
+                  key={i}
+                  row={row}
+                  frameSizes={frameSizes}
+                  onFrameSizeChange={(key, val) =>
+                    setFrameSizes((prev) => ({ ...prev, [key]: val }))
+                  }
+                />
+              ))}
+            </>
           ) : (
             <div style={{ padding: 12, textAlign: 'center' }}>
               <Muted>Ничего не найдено</Muted>

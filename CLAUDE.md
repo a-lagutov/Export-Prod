@@ -114,12 +114,13 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 ## UI Features (`src/ui.tsx`)
 
 ### Export tab
-- **Ресайзы screen**: per-frame size limits live on a dedicated sub-screen (`screen === 'resize-limits'`), opened via the "Ресайзы" button on the main export screen. The button shows the total frame count. The sub-screen has a back arrow (`←`) header and a full scrollable tree with all nodes expanded by default (`defaultExpanded={true}`). `screen` state (`'main' | 'resize-limits'`) lives in `App`.
-- **Tree view** with collapsible format/channel/platform/creative nodes; sticky format headers
-- **Per-frame size limits**: `FrameRow` component with hover highlight (`--figma-color-bg-hover`) and click-to-focus on limit input
+- **Ресайзы screen**: per-frame size limits live on a dedicated sub-screen (`screen === 'resize-limits'`), opened via the "Ресайзы" button on the main export screen. The button shows the total frame count. The sub-screen has a fixed header with a back arrow (`←`), the title, a tree/table view toggle (icon buttons), and a search input pinned below the title row. `screen` state (`'main' | 'resize-limits'`) lives in `App`. `resizeLimitsView` state (`'tree' | 'table'`) also lives in `App`.
+- **Tree view** (`resizeLimitsView === 'tree'`): collapsible format/channel/platform/creative nodes; sticky format headers; all nodes expanded by default (`defaultExpanded={true}`). Rendered via `TreeNodeView` + `FrameRow`.
+- **Table view** (`resizeLimitsView === 'table'`): flat list of all frames with a sticky column header row (Формат / Креатив / Ресайз / Лимит). Each row rendered by `TableRow` component. The creative column cell has a `title` attribute with the full path (`channel › platform › creative`). Data comes from `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
+- **Per-frame size limits**: `FrameRow` (tree) and `TableRow` (table) components — hover highlight (`--figma-color-bg-hover`), click-to-focus on limit input
 - **Per-platform size limits**: global limits per format+platform combination
-- **Numeric inputs** (`NumInput`, `FrameRow` limit field): `type="text"` with `inputMode="decimal"`. Input is filtered on change — only digits and one decimal dot allowed; commas are converted to dots. On blur: trailing dot is stripped, value `<= 0` clears to empty (empty = no limit). Do not switch these back to `type="number"`.
-- **Search/filter**: filters the resize tree by name or size (search input is on the Ресайзы screen, not the main export screen)
+- **Numeric inputs** (`NumInput`, `FrameRow` limit field, `TableRow` limit field): `type="text"` with `inputMode="decimal"`. Input is filtered on change — only digits and one decimal dot allowed; commas are converted to dots. On blur: trailing dot is stripped, value `<= 0` clears to empty (empty = no limit). Do not switch these back to `type="number"`.
+- **Search/filter**: search input is in the fixed header of the Ресайзы screen (not in the scroll area). In tree mode it filters via `filterTree`; in table mode via `filterFlatRows`.
 - **Path mode**: segmented control to include or strip the format folder from ZIP paths
 - **GIF delay**: configurable frame delay (seconds)
 - **Preview HTML**: after export, downloads a self-contained HTML file for visual review. All Figma node names and file paths are HTML-escaped via `escHtml()` before insertion to prevent XSS.
