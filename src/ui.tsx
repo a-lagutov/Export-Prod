@@ -1119,7 +1119,7 @@ function App() {
         padding: 12,
         fontFamily: 'Inter, system-ui, sans-serif',
         fontSize: 12,
-        paddingBottom: phase === 'ready' || phase === 'done' ? 100 : 12,
+        paddingBottom: phase === 'ready' || phase === 'done' || phase === 'exporting' ? 100 : 12,
       }}
     >
       {/* Header with item count and rescan */}
@@ -1313,8 +1313,17 @@ function App() {
 
       {/* Progress + cancel */}
       {isExporting && (
-        <Fragment>
-          <VerticalSpace space="small" />
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '12px 16px 16px',
+            background: 'var(--figma-color-bg)',
+            borderTop: '1px solid var(--figma-color-border)',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div
               style={{
@@ -1334,24 +1343,22 @@ function App() {
                 }}
               />
             </div>
-            {isExporting && (
-              <span
-                onClick={handleCancel}
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  color: 'var(--figma-color-text-danger)',
-                  userSelect: 'none',
-                  flexShrink: 0,
-                }}
-              >
-                Отмена
-              </span>
-            )}
+            <span
+              onClick={handleCancel}
+              style={{
+                cursor: 'pointer',
+                fontSize: 11,
+                color: 'var(--figma-color-text-danger)',
+                userSelect: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Отмена
+            </span>
           </div>
           <VerticalSpace space="extraSmall" />
           <Muted>{progress.text}</Muted>
-        </Fragment>
+        </div>
       )}
 
       {/* Download */}
