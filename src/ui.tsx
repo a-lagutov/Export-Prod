@@ -915,9 +915,7 @@ function App() {
           track('plugin_opened', { frame_count: newItems.length, has_frames: newItems.length > 0 })
         }
         log('scan-result', { frame_count: newItems.length })
-        setPhase((prev) =>
-          prev === 'exporting' || prev === 'done' ? prev : newTree.length > 0 ? 'ready' : 'empty',
-        )
+        setPhase((prev) => (prev === 'exporting' ? prev : newTree.length > 0 ? 'ready' : 'empty'))
       }
 
       if (msg.type === 'rename-done') {
@@ -1014,7 +1012,6 @@ function App() {
   }, [])
 
   function handleRescan() {
-    setPhase('loading')
     setSearch('')
     parent.postMessage({ pluginMessage: { type: 'scan' } }, '*')
   }
