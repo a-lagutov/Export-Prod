@@ -7,6 +7,9 @@ module.exports = (env) => ({
   documentAccess: 'dynamic-page',
   editorType: ['figma'],
   networkAccess: {
-    allowedDomains: env.POSTHOG_HOST ? [env.POSTHOG_HOST] : [],
+    allowedDomains: [
+      ...(env.POSTHOG_HOST ? [env.POSTHOG_HOST] : []),
+    ],
+    ...(env.LOG_SERVER ? { devAllowedDomains: [env.LOG_SERVER] } : {}),
   },
 })

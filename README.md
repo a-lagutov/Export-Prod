@@ -31,12 +31,22 @@ Env files follow CRA priority order and are injected at build time.
 | `POSTHOG_KEY` | `.env.development.local` (gitignored) | Analytics key for development (events marked `is_test_user: true`) |
 | `POSTHOG_HOST` | `.env` | Analytics host; also sets `networkAccess.allowedDomains` in `dist/manifest.json` |
 | `PLUGIN_NAME` | `.env` | Plugin display name in Figma; sets `name` in `dist/manifest.json` |
+| `LOG_SERVER` | `.env.development` | Dev log server URL (`http://localhost:3001`); added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
 Create `.env.production.local` (and optionally `.env.development.local`) with your PostHog key:
 
 ```
 POSTHOG_KEY=phc_...
 ```
+
+#### Dev logging
+
+`npm run watch` automatically starts a local HTTP log server (port 3001) when `LOG_SERVER` is set. Logs are written to:
+
+- `logs/ui.log` — structured logs from the plugin UI and main threads
+- `logs/figma.log` — captured `console.warn` / `console.error` from the Figma iframe
+
+Changes to `scripts/log-server.js` are applied immediately without restarting `npm run watch`.
 
 ### Figma Page Structure
 
@@ -134,7 +144,7 @@ Communication between threads via `postMessage` / `figma.ui.postMessage`.
 2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes content via esbuild `define` as `__GIF_WORKER_CONTENT__`
 3. esbuild: `src/ui.tsx` → `dist/ui.js` + `dist/ui.css` (JSX via preact/jsx-runtime)
 4. Inline JS and CSS into `dist/ui.html` (Figma doesn't resolve external files)
-5. Calls `manifest.js(env)` and writes result to `dist/manifest.json` (env vars injected into `name` and `networkAccess.allowedDomains`)
+5. Calls `manifest.js(env)` and writes result to `dist/manifest.json` (env vars injected into `name`, `networkAccess.allowedDomains`, and `networkAccess.devAllowedDomains`)
 
 `manifest.js` at the root is the source of truth for the manifest. Do not edit `dist/manifest.json` directly.
 
@@ -178,12 +188,22 @@ Env-файлы загружаются в порядке приоритета (к
 | `POSTHOG_KEY` | `.env.development.local` (в gitignore) | Ключ аналитики для разработки (события помечаются `is_test_user: true`) |
 | `POSTHOG_HOST` | `.env` | Хост аналитики; также задаёт `networkAccess.allowedDomains` в `dist/manifest.json` |
 | `PLUGIN_NAME` | `.env` | Отображаемое имя плагина в Figma; задаёт `name` в `dist/manifest.json` |
+| `LOG_SERVER` | `.env.development` | URL лог-сервера (`http://localhost:3001`); добавляется в `manifest.json` → `networkAccess.devAllowedDomains` |
 
 Создайте `.env.production.local` (и при необходимости `.env.development.local`) с вашим ключом PostHog:
 
 ```
 POSTHOG_KEY=phc_...
 ```
+
+#### Логирование в режиме разработки
+
+`npm run watch` автоматически запускает локальный HTTP лог-сервер (порт 3001), если задана переменная `LOG_SERVER`. Логи пишутся в:
+
+- `logs/ui.log` — структурированные логи из UI-потока и main-потока плагина
+- `logs/figma.log` — вызовы `console.warn` / `console.error` из Figma iframe
+
+Изменения в `scripts/log-server.js` применяются без перезапуска `npm run watch`.
 
 ### Структура страницы в Figma
 
@@ -281,7 +301,7 @@ xxxx-yyy
 2. Читает `gif.worker.js` из `node_modules/gif.js/dist/` и передаёт содержимое через esbuild `define` как `__GIF_WORKER_CONTENT__`
 3. esbuild: `src/ui.tsx` → `dist/ui.js` + `dist/ui.css` (JSX через preact/jsx-runtime)
 4. Инлайн JS и CSS в `dist/ui.html` (Figma не резолвит внешние файлы)
-5. Вызывает `manifest.js(env)` и записывает результат в `dist/manifest.json` (env-переменные подставляются в `name` и `networkAccess.allowedDomains`)
+5. Вызывает `manifest.js(env)` и записывает результат в `dist/manifest.json` (env-переменные подставляются в `name`, `networkAccess.allowedDomains` и `networkAccess.devAllowedDomains`)
 
 `manifest.js` в корне — источник истины для манифеста. Не редактируйте `dist/manifest.json` напрямую.
 

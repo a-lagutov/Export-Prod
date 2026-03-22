@@ -6,6 +6,7 @@ import type { TreeNode, ExportItem, SectionFormat } from './types'
 import JSZip from 'jszip'
 import GIF from 'gif.js'
 import { track } from './analytics'
+import { log, error, fromCodeThread } from './logger'
 
 // gif.worker.js content injected at build time via esbuild define
 declare const __GIF_WORKER_CONTENT__: string
@@ -913,6 +914,7 @@ function App() {
           openTrackedRef.current = true
           track('plugin_opened', { frame_count: newItems.length, has_frames: newItems.length > 0 })
         }
+        log('scan-result', { frame_count: newItems.length })
         setPhase((prev) =>
           prev === 'exporting' || prev === 'done' ? prev : newTree.length > 0 ? 'ready' : 'empty',
         )
@@ -935,13 +937,14 @@ function App() {
         }
         const limit = getLimit(path.split('/').pop()!, format, platformName)
         setProgress({ current: index + 1, total, text: `Обработка ${index + 1}/${total}: ${path}` })
+        log('frame-data', { index, total, path, format, limitBytes: limit })
         try {
           const blob = await convertFrame(new Uint8Array(pngBytes), format, limit)
           const zPath = resolvePath(path)
           zipRef.current?.file(zPath, blob)
           exportedFilesRef.current.push(zPath)
         } catch (e) {
-          console.error('Error converting', path, e)
+          error('convertFrame failed', { path, format, error: String(e) })
           track('export_error', { format, error: String(e) })
         }
         if (!cancelledRef.current) {
@@ -966,18 +969,23 @@ function App() {
           total,
           text: `Сборка GIF ${index + 1}/${total}: ${path}`,
         })
+        log('gif-data', { index, total, path, limitBytes: limit })
         try {
           const blob = await assembleGif(frames, width, height, delay, limit)
           const zPath = resolvePath(path)
           zipRef.current?.file(zPath, blob)
           exportedFilesRef.current.push(zPath)
         } catch (e) {
-          console.error('Error assembling GIF', path, e)
+          error('assembleGif failed', { path, error: String(e) })
           track('export_error', { format: 'gif', error: String(e) })
         }
         if (!cancelledRef.current) {
           parent.postMessage({ pluginMessage: { type: 'request-frame', index: index + 1 } }, '*')
         }
+      }
+
+      if (msg.type === 'log') {
+        fromCodeThread(msg.level ?? 'log', msg.message, msg.data)
       }
 
       if (msg.type === 'export-complete') {

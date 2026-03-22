@@ -53,6 +53,7 @@ const envDefine = Object.fromEntries(
 )
 envDefine['__VERSION__'] = JSON.stringify(version)
 envDefine['__DEV__'] = JSON.stringify(mode === 'development')
+envDefine['__LOG_SERVER__'] = JSON.stringify(env.LOG_SERVER ?? '')
 
 async function build() {
   // 1. Bundle code.ts → dist/code.js

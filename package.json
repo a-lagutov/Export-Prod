@@ -8,7 +8,8 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write src",
-    "prepare": "husky"
+    "prepare": "husky",
+    "log-server": "node scripts/log-server.js"
   },
   "dependencies": {
     "gif.js": "^0.2.0",

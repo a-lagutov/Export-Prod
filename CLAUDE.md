@@ -17,7 +17,7 @@ Linting and formatting are configured via ESLint + Prettier with a Husky pre-com
 
 ## Environment Variables
 
-Env files are loaded in CRA priority order and injected at build time via esbuild `define` as `__VAR__` constants. Only `POSTHOG_*` variables are injected.
+Env files are loaded in CRA priority order and injected at build time via esbuild `define` as `__VAR__` constants.
 
 Priority for `npm run build`: `.env.production.local` > `.env.local` > `.env.production` > `.env`
 Priority for `npm run watch`: `.env.development.local` > `.env.local` > `.env.development` > `.env`
@@ -29,8 +29,9 @@ Gitignored (local overrides): `.env.local`, `.env.*.local`
 |---|---|---|
 | `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key for production |
 | `POSTHOG_KEY` | `.env.development.local` (gitignored) | Analytics key for development |
-| `POSTHOG_HOST` | `.env` (committed) | Analytics host; also injected into `dist/manifest.json` → `networkAccess.allowedDomains` |
+| `POSTHOG_HOST` | `.env` (committed) | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains` |
 | `PLUGIN_NAME` | `.env` (committed) | Plugin display name in Figma; injected into `dist/manifest.json` → `name` |
+| `LOG_SERVER` | `.env.development` (committed) | Dev log server URL (e.g. `http://localhost:3001`); injected as `__LOG_SERVER__`; added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
 If a variable is absent, it defaults to an empty string and analytics are silently disabled.
 
@@ -54,12 +55,33 @@ When adding a new gitignored variable that should be present in production build
 **Build pipeline (`scripts/build.js`):**
 1. esbuild bundles `src/code.ts` → `dist/code.js`
 2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
-3. Loads env files (CRA priority order), injects `POSTHOG_*` vars as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
+3. Loads env files (CRA priority order), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
 4. esbuild bundles `src/ui.tsx` → `dist/ui.js` + `dist/ui.css` (JSX via preact/jsx-runtime)
 5. Inlines `dist/ui.js` and `dist/ui.css` into `dist/ui.html`
-6. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`)
+6. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
+
+**`scripts/watch.js`** additionally:
+- Writes `dist/manifest.json` on startup (dev env, includes `devAllowedDomains`)
+- Watches `manifest.js` for changes and regenerates `dist/manifest.json` immediately
+- Auto-starts `scripts/log-server.js` if `LOG_SERVER` is set; watches it for changes and hot-reloads on save
 
 **`manifest.js`** at the project root is the source of truth for the manifest — it exports a factory `(env) => ({...})`. Do not edit `dist/manifest.json` directly.
+
+## Dev Logging (`src/logger.ts`)
+
+`src/logger.ts` is the dev-only logging module imported by `ui.tsx`. In production (`__DEV__ = false`) all network sends are no-ops.
+
+Exports: `log`, `warn`, `error`, `info` (thread `ui`) and `fromCodeThread` (thread `code`, called from the `{ type: 'log' }` postMessage bridge).
+
+At module load time in dev mode, it also:
+- Overrides `console.warn` and `console.error` to forward captured output to the server as thread `figma`
+- Patches `HTMLCanvasElement.prototype.getContext` to add `{ willReadFrequently: true }` for all `'2d'` contexts (suppresses the gif.js browser warning)
+
+**Log server** (`scripts/log-server.js`): HTTP server on port 3001, routes entries to:
+- `logs/ui.log` — threads `ui` and `code`
+- `logs/figma.log` — thread `figma`
+
+Started automatically by `npm run watch` when `LOG_SERVER` is set; hot-reloads when its own file changes (managed by `watch.js`).
 
 ## Expected Figma Page Structure
 

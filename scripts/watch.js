@@ -39,6 +39,7 @@ try {
 }
 envDefine['__VERSION__'] = JSON.stringify(version)
 envDefine['__DEV__'] = JSON.stringify(true)
+envDefine['__LOG_SERVER__'] = JSON.stringify(env.LOG_SERVER ?? '')
 
 const gifWorkerContent = fs.readFileSync(
   path.join(root, 'node_modules/gif.js/dist/gif.worker.js'),
@@ -75,6 +76,26 @@ const fixFigmaPluginCssImports = {
     }))
   },
 }
+
+if (env.LOG_SERVER) {
+  let logServer = require('./log-server')
+  fs.watch(path.join(__dirname, 'log-server.js'), { persistent: false }, () => {
+    logServer.close(() => {
+      delete require.cache[require.resolve('./log-server')]
+      logServer = require('./log-server')
+    })
+  })
+}
+
+function writeManifest() {
+  delete require.cache[require.resolve('../manifest.js')]
+  const manifest = require('../manifest.js')(env)
+  fs.writeFileSync(path.join(root, 'dist/manifest.json'), JSON.stringify(manifest, null, 2))
+  console.log('✓ dist/manifest.json')
+}
+
+writeManifest()
+fs.watch(path.join(root, 'manifest.js'), () => writeManifest())
 
 async function watch() {
   const codeCtx = await esbuild.context({
