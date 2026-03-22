@@ -838,9 +838,11 @@ function SegmentedControl<T extends string>({
 // ── App ───────────────────────────────────────────────────────────────────────
 
 type Phase = 'loading' | 'empty' | 'ready' | 'exporting' | 'done'
+type AppScreen = 'main' | 'resize-limits'
 
 function App() {
   const [phase, setPhase] = useState<Phase>('loading')
+  const [screen, setScreen] = useState<AppScreen>('main')
   const [tree, setTree] = useState<TreeNode[]>([])
   const [items, setItems] = useState<ExportItem[]>([])
   const [platformSizes, setPlatformSizes] = useState<Record<string, string>>({})
@@ -1111,6 +1113,71 @@ function App() {
     )
   }
 
+  // ── Resize limits screen ───────────────────────────────────────────────────
+  if (screen === 'resize-limits') {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          fontFamily: 'Inter, system-ui, sans-serif',
+          fontSize: 12,
+        }}
+      >
+        {/* Back header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            borderBottom: '1px solid var(--figma-color-border)',
+            background: 'var(--figma-color-bg)',
+            flexShrink: 0,
+          }}
+        >
+          <span
+            onClick={() => setScreen('main')}
+            style={{
+              cursor: 'pointer',
+              fontSize: 18,
+              lineHeight: 1,
+              color: 'var(--figma-color-text-secondary)',
+              userSelect: 'none',
+              padding: '0 4px',
+            }}
+          >
+            ←
+          </span>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>Лимиты по ресайзам</span>
+        </div>
+
+        {/* Search + tree */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: 12 }}>
+          <SearchInput value={search} onChange={setSearch} />
+          <VerticalSpace space="small" />
+          {filteredTree.length > 0 ? (
+            filteredTree.map((node, i) => (
+              <TreeNodeView
+                key={i}
+                node={node}
+                formatTag=""
+                frameSizes={frameSizes}
+                onFrameSizeChange={(key, val) => setFrameSizes((prev) => ({ ...prev, [key]: val }))}
+                defaultExpanded={true}
+              />
+            ))
+          ) : (
+            <div style={{ padding: 12, textAlign: 'center' }}>
+              <Muted>Ничего не найдено</Muted>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // ── Main UI ────────────────────────────────────────────────────────────────
   return (
     <div
@@ -1123,67 +1190,29 @@ function App() {
       }}
     >
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: 12 }}>
-        {/* Header with item count and rescan */}
-        <div
+        {/* Resize limits button */}
+        <button
+          onClick={() => setScreen('resize-limits')}
           style={{
+            width: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: 8,
-          }}
-        >
-          <Text>
-            <strong>Найдено {items.length}</strong>{' '}
-            <Muted>{declension(items.length, 'файл', 'файла', 'файлов')}</Muted>
-          </Text>
-          <span
-            onClick={handleRescan}
-            style={{
-              cursor: 'pointer',
-              fontSize: 11,
-              color: 'var(--figma-color-text-brand)',
-              userSelect: 'none',
-            }}
-          >
-            Обновить
-          </span>
-        </div>
-
-        {/* Search */}
-        <SearchInput value={search} onChange={setSearch} />
-        <VerticalSpace space="small" />
-
-        {/* Tree */}
-        <Text>
-          <strong>Лимиты по ресайзам</strong>
-        </Text>
-        <VerticalSpace space="small" />
-        <div
-          style={{
-            maxHeight: 240,
-            overflowY: 'auto',
+            padding: '8px 12px',
             border: '1px solid var(--figma-color-border)',
             borderRadius: 6,
-            padding: '0 12px 12px 12px',
+            background: 'var(--figma-color-bg-secondary)',
+            color: 'var(--figma-color-text)',
+            fontSize: 12,
+            cursor: 'pointer',
+            marginBottom: 0,
           }}
         >
-          {filteredTree.length > 0 ? (
-            filteredTree.map((node, i) => (
-              <TreeNodeView
-                key={i}
-                node={node}
-                formatTag=""
-                frameSizes={frameSizes}
-                onFrameSizeChange={(key, val) => setFrameSizes((prev) => ({ ...prev, [key]: val }))}
-                defaultExpanded={!!search}
-              />
-            ))
-          ) : (
-            <div style={{ padding: 12, textAlign: 'center' }}>
-              <Muted>Ничего не найдено</Muted>
-            </div>
-          )}
-        </div>
+          <span style={{ fontWeight: 600 }}>Ресайзы</span>
+          <span style={{ color: 'var(--figma-color-text-tertiary)', fontSize: 11 }}>
+            {items.length} {declension(items.length, 'файл', 'файла', 'файлов')} ›
+          </span>
+        </button>
 
         {/* Platform limits */}
         {formatPlatforms.length > 0 && (
