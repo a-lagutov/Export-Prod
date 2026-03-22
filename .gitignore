@@ -25,3 +25,4 @@ logs/
 
 # Local
 .claude
+.mcp.json
