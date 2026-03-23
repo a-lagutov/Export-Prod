@@ -53,6 +53,7 @@ Gitignored (local overrides): `.env.local`, `.env.*.local`
 | `POSTHOG_KEY`  | `.env.development.local` (gitignored) | Analytics key for development                                                                                                                 |
 | `POSTHOG_HOST` | `.env` (committed)                    | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains`                                                           |
 | `PLUGIN_NAME`  | `.env` (committed)                    | Plugin display name in Figma; injected into `dist/manifest.json` → `name`                                                                     |
+| `PLUGIN_ID`    | `.env` (committed)                    | Figma plugin ID; injected into `dist/manifest.json` → `id`                                                                                    |
 | `LOG_SERVER`   | `.env.development` (committed)        | Dev log server URL (e.g. `http://localhost:3001`); injected as `__LOG_SERVER__`; added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
 If a variable is absent, it defaults to an empty string and analytics are silently disabled.

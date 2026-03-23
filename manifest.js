@@ -1,6 +1,6 @@
 module.exports = (env) => ({
   name: env.PLUGIN_NAME || '',
-  id: '1616402881533961813',
+  id: env.PLUGIN_ID || '',
   api: '1.0.0',
   main: 'code.js',
   ui: 'ui.html',

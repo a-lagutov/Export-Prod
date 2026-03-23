@@ -31,6 +31,7 @@ Env files follow CRA priority order and are injected at build time.
 | `POSTHOG_KEY`  | `.env.development.local` (gitignored) | Analytics key for development (events marked `is_test_user: true`)                                         |
 | `POSTHOG_HOST` | `.env`                                | Analytics host; also sets `networkAccess.allowedDomains` in `dist/manifest.json`                           |
 | `PLUGIN_NAME`  | `.env`                                | Plugin display name in Figma; sets `name` in `dist/manifest.json`                                          |
+| `PLUGIN_ID`    | `.env`                                | Figma plugin ID; sets `id` in `dist/manifest.json`                                                         |
 | `LOG_SERVER`   | `.env.development`                    | Dev log server URL (`http://localhost:3001`); added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
 Create `.env.production.local` (and optionally `.env.development.local`) with your PostHog key:
@@ -212,6 +213,7 @@ Env-файлы загружаются в порядке приоритета (к
 | `POSTHOG_KEY`  | `.env.development.local` (в gitignore) | Ключ аналитики для разработки (события помечаются `is_test_user: true`)                                      |
 | `POSTHOG_HOST` | `.env`                                 | Хост аналитики; также задаёт `networkAccess.allowedDomains` в `dist/manifest.json`                           |
 | `PLUGIN_NAME`  | `.env`                                 | Отображаемое имя плагина в Figma; задаёт `name` в `dist/manifest.json`                                       |
+| `PLUGIN_ID`    | `.env`                                 | ID плагина в Figma; задаёт `id` в `dist/manifest.json`                                                       |
 | `LOG_SERVER`   | `.env.development`                     | URL лог-сервера (`http://localhost:3001`); добавляется в `manifest.json` → `networkAccess.devAllowedDomains` |
 
 Создайте `.env.production.local` (и при необходимости `.env.development.local`) с вашим ключом PostHog:
