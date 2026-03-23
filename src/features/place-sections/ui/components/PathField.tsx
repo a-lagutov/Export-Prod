@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { Textbox } from '@create-figma-plugin/ui'
 import { ComboboxDropdown } from '../../../../shared/ui/ComboboxDropdown'
 
+/**
+ * Labeled text input with an autocomplete dropdown for a single path segment (format, channel, platform, or creative).
+ * Dropdown closes on blur with a 150ms delay to allow click events on options to register first.
+ */
 export function PathField({
   label,
   value,

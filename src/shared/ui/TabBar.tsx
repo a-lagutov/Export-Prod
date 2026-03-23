@@ -1,3 +1,4 @@
+/** Top navigation bar with two tabs: "Экспорт" and "Разместить". */
 export function TabBar({
   active,
   onChange,

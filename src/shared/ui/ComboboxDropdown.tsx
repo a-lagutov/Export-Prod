@@ -1,3 +1,7 @@
+/**
+ * Floating dropdown list of autocomplete options positioned below the trigger element.
+ * Uses `onMouseDown` instead of `onClick` to fire before the input's `onBlur` event.
+ */
 export function ComboboxDropdown({
   options,
   onSelect,

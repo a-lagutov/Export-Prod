@@ -2,6 +2,11 @@ import { useRef } from 'react'
 import { Text } from '@create-figma-plugin/ui'
 import { NumInput } from '../../../../shared/ui/NumInput'
 
+/**
+ * Row for setting the size limit for a specific format + platform combination.
+ * Contains a platform-filtered export button, the platform name, and a numeric limit input.
+ * Clicking anywhere on the row focuses the input.
+ */
 export function PlatformRow({
   name,
   format,

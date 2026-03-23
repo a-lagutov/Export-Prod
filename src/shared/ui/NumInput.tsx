@@ -1,5 +1,11 @@
 import { TextboxNumeric } from '@create-figma-plugin/ui'
 
+/**
+ * Numeric input wrapper around `TextboxNumeric` from `@create-figma-plugin/ui`.
+ * Accepts a `containerRef` so callers can programmatically focus the inner input
+ * via `containerRef.current?.querySelector('input')?.focus()`.
+ * Validates on blur — rejects zero and negative values.
+ */
 export function NumInput({
   value,
   onChange,

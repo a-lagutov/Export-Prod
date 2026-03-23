@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Style
+
+### Function Comments
+
+All functions must have comments. Use JSDoc (`/** ... */`) for all public functions, hooks, and utilities. Explain non-obvious logic inside functions with inline comments (`//`).
+
+Reference: https://jsdoc.app
+
+### Variable Naming
+
+Variable and function names must be readable and descriptive. Avoid abbreviations like `cb`, `fn`, `v`, `tmp`.
+
+- Functions and variables: `camelCase`
+- React/Preact components: `PascalCase`
+- Constants: `UPPER_SNAKE_CASE`
+
+References: [Airbnb Style Guide](https://github.com/airbnb/javascript), [TypeScript Style Guide](https://basarat.gitbook.io/typescript/styleguide)
+
 ## Commit Messages
 
 All commit messages must be in English.
@@ -29,13 +47,13 @@ Priority for `npm run watch`: `.env.development.local` > `.env.local` > `.env.de
 Committed (non-secret defaults): `.env`, `.env.production`, `.env.development`
 Gitignored (local overrides): `.env.local`, `.env.*.local`
 
-| Variable | Where | Purpose |
-|---|---|---|
-| `POSTHOG_KEY` | `.env.production.local` (gitignored) | Analytics key for production |
-| `POSTHOG_KEY` | `.env.development.local` (gitignored) | Analytics key for development |
-| `POSTHOG_HOST` | `.env` (committed) | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains` |
-| `PLUGIN_NAME` | `.env` (committed) | Plugin display name in Figma; injected into `dist/manifest.json` → `name` |
-| `LOG_SERVER` | `.env.development` (committed) | Dev log server URL (e.g. `http://localhost:3001`); injected as `__LOG_SERVER__`; added to `manifest.json` → `networkAccess.devAllowedDomains` |
+| Variable       | Where                                 | Purpose                                                                                                                                       |
+| -------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTHOG_KEY`  | `.env.production.local` (gitignored)  | Analytics key for production                                                                                                                  |
+| `POSTHOG_KEY`  | `.env.development.local` (gitignored) | Analytics key for development                                                                                                                 |
+| `POSTHOG_HOST` | `.env` (committed)                    | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains`                                                           |
+| `PLUGIN_NAME`  | `.env` (committed)                    | Plugin display name in Figma; injected into `dist/manifest.json` → `name`                                                                     |
+| `LOG_SERVER`   | `.env.development` (committed)        | Dev log server URL (e.g. `http://localhost:3001`); injected as `__LOG_SERVER__`; added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
 If a variable is absent, it defaults to an empty string and analytics are silently disabled.
 
@@ -43,8 +61,8 @@ If a variable is absent, it defaults to an empty string and analytics are silent
 
 Gitignored variables that must be present in release builds are passed via GitHub environment secrets. The workflow uses `environment: production` — secrets live in Settings → Environments → production. The workflow reads them as `${{ secrets.VAR_NAME }}` and passes them as `env:` to the build step.
 
-| Secret | Environment | Purpose |
-|---|---|---|
+| Secret        | Environment  | Purpose                                                    |
+| ------------- | ------------ | ---------------------------------------------------------- |
 | `POSTHOG_KEY` | `production` | Analytics key — must match `.env.production.local` locally |
 
 When adding a new gitignored variable that should be present in production builds: add it to the `env:` block of the `npm run build` step in `.github/workflows/release.yml` and add the corresponding secret in Settings → Environments → production.
@@ -124,6 +142,7 @@ src/
 **Initialization handshake:** `app/figma.ts` does NOT push `scan-result` on startup — the UI iframe may not have registered its message listener yet (race condition). Instead, the UI calls `emit('scan')` from its `useEffect` once listeners are registered, and the code thread responds. The same pull pattern applies to `get-sections` in the Place tab. Never switch back to push-on-startup for initial data.
 
 **Build pipeline (`scripts/build.js`):**
+
 1. esbuild bundles `src/app/figma.ts` → `dist/code.js`
 2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
 3. Loads env files (CRA priority order), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
@@ -132,6 +151,7 @@ src/
 6. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
 
 **`scripts/watch.js`** additionally:
+
 - Writes `dist/manifest.json` on startup (dev env, includes `devAllowedDomains`)
 - Watches `manifest.js` for changes and regenerates `dist/manifest.json` immediately
 - Auto-starts `scripts/log-server.js` if `LOG_SERVER` is set; watches it for changes and hot-reloads on save
@@ -145,10 +165,12 @@ src/
 Exports: `log`, `warn`, `error`, `info` (thread `ui`). `fromCodeThread` is defined but not wired by default (the code thread does not emit `log` events).
 
 At module load time in dev mode, it also:
+
 - Overrides `console.warn` and `console.error` to forward captured output to the server as thread `figma`
 - Patches `HTMLCanvasElement.prototype.getContext` to add `{ willReadFrequently: true }` for all `'2d'` contexts (suppresses the gif.js browser warning)
 
 **Log server** (`scripts/log-server.js`): HTTP server on port 3001, routes entries to:
+
 - `logs/ui.log` — threads `ui` and `code`
 - `logs/figma.log` — thread `figma`
 
@@ -179,7 +201,8 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 ## UI Features
 
 ### Export tab
-- **Ресайзы screen**: per-frame size limits live on a dedicated sub-screen rendered by `ResizeLimitsScreen` (`src/widgets/resize-limits/ui/ResizeLimitsScreen.tsx`), opened via the "Ресайзы" button on the main export screen. The button shows the total frame count. The sub-screen has a fixed header (`ResizeLimitsHeader`) with a back arrow (`←`), the title, a tree/table view toggle (icon buttons), and a search input pinned below the title row. `screen` state (`'main' | 'resize-limits'`) lives in `ExportPage`. `resizeLimitsView` state (`'tree' | 'table'`) lives in `useExport`.
+
+- **Resizes screen**: per-frame size limits live on a dedicated sub-screen rendered by `ResizeLimitsScreen` (`src/widgets/resize-limits/ui/ResizeLimitsScreen.tsx`), opened via the "Resizes" button on the main export screen. The button shows the total frame count. The sub-screen has a fixed header (`ResizeLimitsHeader`) with a back arrow (`←`), the title, a tree/table view toggle (icon buttons), and a search input pinned below the title row. `screen` state (`'main' | 'resize-limits'`) lives in `ExportPage`. `resizeLimitsView` state (`'tree' | 'table'`) lives in `useExport`.
 - **Tree view** (`resizeLimitsView === 'tree'`): collapsible format/channel/platform/creative nodes; sticky format headers; all nodes expanded by default (`defaultExpanded={true}`). Rendered via `TreeNodeView` + `FrameRow`.
 - **Table view** (`resizeLimitsView === 'table'`): flat list of all frames with a sticky column header row (Формат / Креатив / Ресайз / Лимит). Each row rendered by `TableRow` component. The creative column cell has a `title` attribute with the full path (`channel › platform › creative`). Data comes from `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
 - **Per-frame size limits**: `FrameRow` (tree) and `TableRow` (table) components — hover highlight (`--figma-color-bg-hover`), click-to-focus on limit input (via `containerRef` + `querySelector('input')`)
@@ -188,7 +211,7 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 - **GIF delay row**: `GifDelayRow` component — full-width hover, click-to-focus on the input.
 - **Numeric inputs** (`NumInput`, `FrameRow`, `TableRow`, `FormatRow`, `PlatformRow`, `GifDelayRow`): use `TextboxNumeric` from `@create-figma-plugin/ui` with `variant="border"` and `validateOnBlur`. `NumInput` (`src/shared/ui/NumInput.tsx`) wraps `TextboxNumeric` and accepts a `containerRef` so callers can focus the inner input via `containerRef.current?.querySelector('input')?.focus()`. Do not replace with native `<input type="number">`.
 - **Text inputs** (`PathField`, `PathInput`): use `Textbox` from `@create-figma-plugin/ui` with `variant="border"` and `onValueInput` callback.
-- **Search/filter**: search input is in the fixed header of the Ресайзы screen (not in the scroll area). In tree mode it filters via `filterTree`; in table mode via `filterFlatRows`.
+- **Search/filter**: search input is in the fixed header of the Resizes screen (not in the scroll area). In tree mode it filters via `filterTree`; in table mode via `filterFlatRows`.
 - **Path mode**: segmented control to include or strip the format folder from ZIP paths
 - **GIF delay**: configurable frame delay (seconds)
 - **Preview HTML**: after export, downloads a self-contained HTML file for visual review. All Figma node names and file paths are HTML-escaped via `escHtml()` (`src/shared/lib/preview.ts`) before insertion to prevent XSS.
@@ -197,10 +220,10 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
   - `.btn-icon` / `.btn-active` — small icon buttons; hover/active skipped when `.btn-active` is present
   - `.segmented_control_segmentedControl label:not(:has(.segmented_control_input:checked))` — hover/active skipped for the selected segment
   - `.link-text` — clickable spans (Отмена, Очистить экспорт, Выровнять секции); uses opacity change
-  - `.back-row` — full-width clickable area in the Ресайзы sub-screen header (arrow + title); toggle buttons sit above it via `position: absolute` with `stopPropagation`
+  - `.back-row` — full-width clickable area in the Resizes sub-screen header (arrow + title); toggle buttons sit above it via `position: absolute` with `stopPropagation`
   - `.tree-header` — collapsible node headers in both tree views
   - `.limit-row` — rows in "Лимиты по площадкам" and the GIF delay row; full-width via `margin: 0 -N px` where needed
-  - Ресайзы nav button uses `useState` (not CSS class) because its inline `background` would override CSS `:hover`
+  - Resizes nav button uses `useState` (not CSS class) because its inline `background` would override CSS `:hover`
   - Sticky format headers in tree use `useState` for the same reason
 - **Resize handle**: drag bottom-right corner to resize the plugin window
 - **Layout**: `Root` is a flex column filling 100% of the iframe (`html, body, #create-figma-plugin { height: 100%; overflow: hidden }`). The tab bar sits at the top; each tab content fills the remaining height.
@@ -211,6 +234,7 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 - **Download button label**: shows the ZIP size and file count — e.g. `Скачать ZIP · 2.34 МБ · 42 файла`. If a partial export was run (by format or platform), the label also includes the filter — e.g. `Скачать ZIP JPG · …` or `Скачать ZIP VK · …`.
 
 ### Place tab (Разместить)
+
 - Select frames on the page, choose Format / Channel / Platform / Creative, click "Поместить в секции"
 - Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides)
 - **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform)

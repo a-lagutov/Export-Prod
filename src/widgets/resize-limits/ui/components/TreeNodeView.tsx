@@ -13,6 +13,11 @@ interface TreeNodeViewProps {
   defaultExpanded?: boolean
 }
 
+/**
+ * Recursive collapsible tree node for the `Resizes` tree view.
+ * Renders a `FrameRow` for leaf nodes and a collapsible header + children for branch nodes.
+ * Format-level nodes get sticky positioning and a `TagBadge`; all nodes expanded by default.
+ */
 export function TreeNodeView({
   node,
   formatTag,

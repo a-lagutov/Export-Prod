@@ -1,5 +1,10 @@
 import { useState } from 'react'
 
+/**
+ * Row for a creative section entry in the section tree.
+ * Shows the creative name and a "+" button to place selected frames into it.
+ * The button is disabled (grayed out) when no frames are selected on the page.
+ */
 export function CreativeRow({
   name,
   onAdd,

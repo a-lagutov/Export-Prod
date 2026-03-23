@@ -4,10 +4,18 @@ import { FORMATS } from '../../../shared/config'
 
 // Shared export queue — written by export + place features, read by export feature
 export let exportItems: ExportItem[] = []
+
+/** Replaces the shared export queue with a new list of items. */
 export function updateExportItems(items: ExportItem[]): void {
   exportItems = items
 }
 
+/**
+ * Scans the current Figma page for the 4-level section hierarchy (Format → Channel → Platform → Creative)
+ * and builds both the UI tree and the flat export queue.
+ * GIF frames at the same Y position are grouped into one animation entry sorted left-to-right by X.
+ * @returns An object with `tree` (for the UI) and `items` (for export processing).
+ */
 export function scanPage(): { tree: TreeNode[]; items: ExportItem[] } {
   const tree: TreeNode[] = []
   const items: ExportItem[] = []
@@ -119,6 +127,11 @@ export function scanPage(): { tree: TreeNode[]; items: ExportItem[] } {
   return { tree, items }
 }
 
+/**
+ * Reads the current page's section hierarchy and returns it as plain serializable data
+ * (Format → Channels → Platforms → Creatives), without Figma node references.
+ * Used by the Place tab to populate its format/channel/platform/creative dropdowns.
+ */
 // Reads the current page's section tree and returns section names as plain data
 // (format → channels → platforms → creatives), without Figma node references.
 // Used by the Place tab to populate its format/channel/platform/creative dropdowns.

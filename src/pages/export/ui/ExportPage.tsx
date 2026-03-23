@@ -9,6 +9,11 @@ import { GifDelayRow } from '../../../widgets/platform-limits/ui/components/GifD
 import { ProgressBar } from '../../../shared/ui/ProgressBar'
 import { declension } from '../../../shared/lib/declension'
 
+/**
+ * Export tab root component. Manages the `screen` state (`"main"` | `"resize-limits"`)
+ * and delegates all export logic to `useExport`. Renders either the main export UI
+ * or the `ResizeLimitsScreen` sub-screen based on current screen state.
+ */
 export function ExportPage() {
   const [screen, setScreen] = useState<'main' | 'resize-limits'>('main')
 

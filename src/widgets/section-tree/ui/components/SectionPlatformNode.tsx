@@ -1,5 +1,10 @@
 import { CreativeRow } from './CreativeRow'
 
+/**
+ * Platform-level node in the section tree.
+ * Renders `CreativeRow` entries for each visible creative, filtered by the search query.
+ * Returns null if no creatives match and the platform name itself does not match.
+ */
 export function SectionPlatformNode({
   pl,
   formatName,

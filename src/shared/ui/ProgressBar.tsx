@@ -1,3 +1,7 @@
+/**
+ * Thin horizontal progress bar using Figma brand color.
+ * @param pct - Progress percentage from 0 to 100.
+ */
 export function ProgressBar({ pct }: { pct: number }) {
   return (
     <div

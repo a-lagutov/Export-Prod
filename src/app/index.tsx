@@ -6,6 +6,11 @@ import { OrganizePage } from '../pages/organize/ui/OrganizePage'
 import { TabBar } from '../shared/ui/TabBar'
 import { ResizeHandle } from '../shared/ui/ResizeHandle'
 
+/**
+ * Root UI component. Renders the tab bar, export/organize tab panels, and the resize handle.
+ * Tab panels are kept mounted and toggled with `display` to preserve their state on tab switch.
+ * Emits `get-sections` when switching to the organize tab so it gets fresh section data.
+ */
 function Root() {
   const [activeTab, setActiveTab] = useState<'export' | 'organize'>('export')
 

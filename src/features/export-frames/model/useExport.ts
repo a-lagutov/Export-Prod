@@ -11,6 +11,15 @@ import type { TreeNode, ExportItem } from '../../../entities/frame/model/types'
 
 export type Phase = 'loading' | 'empty' | 'ready' | 'exporting' | 'done'
 
+/**
+ * Core hook for the Export tab. Manages all export state, message listeners, and handlers.
+ *
+ * State phases: `loading` → `empty` | `ready` → `exporting` → `done`.
+ * Registers listeners for `scan-result`, `frame-data`, `gif-data`, `export-complete`, and `code-log`.
+ * Emits `scan` on mount (pull pattern — avoids race condition with push-on-startup).
+ *
+ * @returns All export state, derived values, and handler functions needed by ExportPage.
+ */
 export function useExport() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [tree, setTree] = useState<TreeNode[]>([])
@@ -57,10 +66,16 @@ export function useExport() {
     gifDelayRef.current = gifDelay
   }, [gifDelay])
 
+  /** Strips the leading format folder segment from a full path to produce the ZIP-relative path. */
   function resolvePath(path: string): string {
     return path.split('/').slice(1).join('/')
   }
 
+  /**
+   * Resolves the active size limit in bytes for a given frame, applying priority:
+   * per-frame limit > per-platform limit > per-format limit.
+   * Returns null if no limit is configured or the configured value is zero.
+   */
   function getLimit(fileName: string, format: string, platformName: string): number | null {
     const fSizes = frameSizesRef.current
     const pSizes = platformSizesRef.current
@@ -225,11 +240,16 @@ export function useExport() {
     return () => offs.forEach((off) => off())
   }, [])
 
+  /** Clears the search input and triggers a fresh page scan. */
   function handleRescan() {
     setSearch('')
     emit('scan')
   }
 
+  /**
+   * Starts the export pipeline: renames frames, then triggers sequential frame processing.
+   * @param filter - Optional format/platform filter to export a subset of frames.
+   */
   function handleExport(filter?: { format?: string; platform?: string }) {
     log('handleExport called', { filter })
     const activeCount = filter
@@ -251,6 +271,7 @@ export function useExport() {
     emit('rename-frames', { filterFormat: filter?.format, filterPlatform: filter?.platform })
   }
 
+  /** Cancels the in-progress export: sets the cancelled flag and returns the UI to the ready phase. */
   function handleCancel() {
     track('export_cancelled', {
       frame_count: activeCountRef.current,
@@ -262,6 +283,7 @@ export function useExport() {
     setProgress({ current: 0, total: 0, text: '' })
   }
 
+  /** Triggers a browser download of the assembled ZIP file with a name derived from the active filter. */
   function handleDownload() {
     if (!zipBlob) return
     const filter = exportFilterRef.current

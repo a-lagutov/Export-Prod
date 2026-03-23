@@ -1,6 +1,10 @@
 import { SectionFormatNode } from './SectionFormatNode'
 import type { SectionFormat } from '../../../../entities/frame/model/types'
 
+/**
+ * Scrollable tree of existing page sections filtered by a search query.
+ * Renders `SectionFormatNode` for each visible format section.
+ */
 export function SectionTree({
   sections,
   searchQuery,

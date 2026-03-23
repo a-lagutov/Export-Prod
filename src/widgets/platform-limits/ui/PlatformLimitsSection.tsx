@@ -3,6 +3,11 @@ import { VerticalSpace, Text } from '@create-figma-plugin/ui'
 import { FormatRow } from './components/FormatRow'
 import { PlatformRow } from './components/PlatformRow'
 
+/**
+ * Section displaying per-format and per-platform size limits on the main export screen.
+ * Renders a `FormatRow` for each format followed by `PlatformRow` entries for its platforms.
+ * Each row has an export button to trigger a filtered export for that format/platform.
+ */
 export function PlatformLimitsSection({
   formatPlatforms,
   platformSizes,

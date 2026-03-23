@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { SectionPlatformNode } from './SectionPlatformNode'
 
+/**
+ * Collapsible channel-level node in the section tree. Collapsed by default.
+ * Expands to show `SectionPlatformNode` children for each platform.
+ */
 export function SectionChannelNode({
   ch,
   formatName,

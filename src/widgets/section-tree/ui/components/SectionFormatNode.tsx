@@ -3,6 +3,10 @@ import { TagBadge } from '../../../../shared/ui/TagBadge'
 import { SectionChannelNode } from './SectionChannelNode'
 import type { SectionFormat } from '../../../../entities/frame/model/types'
 
+/**
+ * Collapsible format-level node in the section tree (e.g. JPG, PNG).
+ * Renders a `TagBadge` and expands to show `SectionChannelNode` children.
+ */
 export function SectionFormatNode({
   fmt,
   visibleChannels,

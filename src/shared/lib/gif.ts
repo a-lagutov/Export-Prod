@@ -5,6 +5,10 @@ import { pngBytesToCanvas } from './compression'
 declare const __GIF_WORKER_CONTENT__: string
 let GIF_WORKER_URL: string | null = null
 
+/**
+ * Returns the Blob URL for the gif.js worker script, creating it lazily on first call.
+ * The worker content is injected at build time via esbuild `define` as `__GIF_WORKER_CONTENT__`.
+ */
 export function getGifWorkerUrl(): string {
   if (!GIF_WORKER_URL) {
     const blob = new Blob([__GIF_WORKER_CONTENT__], { type: 'application/javascript' })
@@ -13,6 +17,17 @@ export function getGifWorkerUrl(): string {
   return GIF_WORKER_URL
 }
 
+/**
+ * Assembles multiple PNG frames into a GIF animation, applying size compression if needed.
+ * If a size limit is set, uses binary search over gif.js quality (1–30, lower = better quality)
+ * to find the highest quality that fits within the limit.
+ * @param framesData - Array of PNG frame data as ArrayBuffers, sorted left-to-right.
+ * @param width - Output GIF width in pixels.
+ * @param height - Output GIF height in pixels.
+ * @param delay - Frame delay in milliseconds.
+ * @param limit - Maximum file size in bytes, or null for no limit.
+ * @returns A GIF Blob.
+ */
 export async function assembleGif(
   framesData: ArrayBuffer[],
   width: number,

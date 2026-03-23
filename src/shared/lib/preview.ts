@@ -1,3 +1,4 @@
+/** Escapes special HTML characters in a string to prevent XSS when inserting into HTML. */
 export function escHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -6,6 +7,13 @@ export function escHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * Builds a self-contained HTML preview page from a list of exported file paths.
+ * Groups paths into a nested folder tree and renders each leaf as an image thumbnail.
+ * All file names and paths are HTML-escaped to prevent XSS.
+ * @param paths - Relative file paths (e.g. `["JPG/Channel/Platform/Creative/800x600.jpg"]`).
+ * @returns A complete HTML document string ready for download.
+ */
 export function buildPreviewHtml(paths: string[]): string {
   // Group paths into a tree by folder segments
   type FileNode = { name: string; children: FileNode[]; filePath?: string }

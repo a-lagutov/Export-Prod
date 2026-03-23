@@ -3,6 +3,11 @@ import { TextboxNumeric } from '@create-figma-plugin/ui'
 import { TagBadge } from '../../../../shared/ui/TagBadge'
 import type { FlatRow } from '../../../../entities/frame/model/tree'
 
+/**
+ * A single row in the table view of the `Resizes` screen.
+ * Displays format badge, creative name (with full path in `title`), resize name, and a limit input.
+ * Clicking anywhere on the row focuses the numeric input.
+ */
 export function TableRow({
   row,
   frameSizes,

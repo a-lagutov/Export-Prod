@@ -6,6 +6,13 @@ declare const __LOG_SERVER__: string
 
 type Level = 'log' | 'warn' | 'error' | 'info'
 
+/**
+ * Posts a structured log entry to the local dev log server. No-op in production or when LOG_SERVER is unset.
+ * @param level - Log level: `"log"`, `"warn"`, `"error"`, or `"info"`.
+ * @param thread - Source thread identifier (e.g. `"ui"`, `"code"`, `"figma"`).
+ * @param message - Human-readable log message.
+ * @param data - Optional structured payload to attach.
+ */
 function send(level: Level, thread: string, message: string, data?: unknown): void {
   if (!__DEV__ || !__LOG_SERVER__) return
   fetch(`${__LOG_SERVER__}/log`, {
@@ -15,26 +22,34 @@ function send(level: Level, thread: string, message: string, data?: unknown): vo
   }).catch(() => {})
 }
 
+/** Logs a message at `log` level to the console and dev log server (UI thread). */
 export function log(message: string, data?: unknown): void {
   console.log(message, ...(data !== undefined ? [data] : []))
   send('log', 'ui', message, data)
 }
 
+/** Logs a message at `warn` level to the console and dev log server (UI thread). */
 export function warn(message: string, data?: unknown): void {
   console.warn(message, ...(data !== undefined ? [data] : []))
   send('warn', 'ui', message, data)
 }
 
+/** Logs a message at `error` level to the console and dev log server (UI thread). */
 export function error(message: string, data?: unknown): void {
   console.error(message, ...(data !== undefined ? [data] : []))
   send('error', 'ui', message, data)
 }
 
+/** Logs a message at `info` level to the console and dev log server (UI thread). */
 export function info(message: string, data?: unknown): void {
   console.info(message, ...(data !== undefined ? [data] : []))
   send('info', 'ui', message, data)
 }
 
+/**
+ * Forwards a log entry received from the code thread to the console and dev log server.
+ * Called when a `code-log` message arrives in the UI thread via `on('code-log', ...)`.
+ */
 // Called by ui.tsx when it receives a { type: 'log' } message forwarded from code.ts
 export function fromCodeThread(level: Level, message: string, data?: unknown): void {
   console.log(`[code] ${message}`, ...(data !== undefined ? [data] : []))

@@ -1,13 +1,21 @@
 import * as config from '../config'
 
+/** Returns true if the given scene node is a Figma section. */
 export function isSection(node: SceneNode): node is SectionNode {
   return node.type === 'SECTION'
 }
 
+/** Returns true if the given scene node is a Figma frame. */
 export function isFrame(node: SceneNode): node is FrameNode {
   return node.type === 'FRAME'
 }
 
+/**
+ * Resizes a section so its bounding box encompasses all its children plus padding.
+ * Uses local coordinates (always current) instead of absoluteBoundingBox (can be stale).
+ * Shifts the section origin so content has `padding` space on all sides, compensating
+ * children's local positions to keep their absolute positions unchanged.
+ */
 // Resize a section so its bounding box encompasses all its children + padding.
 // Uses local coordinates (always current) instead of absoluteBoundingBox (can be stale).
 // Shifts the section origin so content has `padding` space on all sides, compensating
@@ -54,6 +62,11 @@ export function fitSectionToChildren(
   }
 }
 
+/**
+ * Resizes a section to contain its children with padding, without moving the section origin.
+ * Unlike {@link fitSectionToChildren}, does not shift the section or compensate child positions.
+ * Use when children are already positioned correctly and only the parent size needs updating.
+ */
 // Resize a section to contain its children with padding, WITHOUT moving the section.
 // Unlike fitSectionToChildren, this does not shift the section origin or compensate children.
 // Use this when children are already positioned correctly and you only need to resize the parent.
@@ -75,6 +88,7 @@ export function resizeSectionOnly(section: SectionNode, padding: number): void {
   }
 }
 
+/** Sets a solid dark fill on a section at the given opacity to visually distinguish hierarchy levels. */
 export function setSectionFill(section: SectionNode, opacity: number): void {
   section.fills = [{ type: 'SOLID', color: { r: 68 / 255, g: 68 / 255, b: 68 / 255 }, opacity }]
 }

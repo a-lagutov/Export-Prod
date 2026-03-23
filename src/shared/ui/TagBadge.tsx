@@ -5,6 +5,7 @@ const TAG_COLORS: Record<string, { bg: string; color: string }> = {
   gif: { bg: '#f8d7da', color: '#721c24' },
 }
 
+/** Colored pill badge showing a format tag (JPG, PNG, WEBP, or GIF) with format-specific colors. */
 export function TagBadge({ format }: { format: string }) {
   const c = TAG_COLORS[format] ?? { bg: '#eee', color: '#333' }
   return (

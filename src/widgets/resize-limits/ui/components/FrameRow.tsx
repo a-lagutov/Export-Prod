@@ -2,6 +2,12 @@ import { useState, useRef } from 'react'
 import { TextboxNumeric } from '@create-figma-plugin/ui'
 import type { TreeNode } from '../../../../entities/frame/model/types'
 
+/**
+ * A single frame row in the tree view of the `Resizes` screen.
+ * Shows the frame name (without extension) and a numeric size-limit input.
+ * Clicking anywhere on the row focuses the input; hover highlight uses state (not CSS class)
+ * because inline `background` would override CSS `:hover`.
+ */
 export function FrameRow({
   node,
   formatTag,

@@ -1,3 +1,4 @@
+/** Sticky column header row for the table view: Format / Creative / Resize / Limit. */
 export function TableHeader() {
   return (
     <div

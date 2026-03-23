@@ -1,6 +1,11 @@
 import { emit } from '@create-figma-plugin/utilities'
 import { declension } from '../../../../shared/lib/declension'
 
+/**
+ * Displays how many frames are currently selected on the Figma page.
+ * Shows a branded highlight when frames are selected; a muted state otherwise.
+ * Also renders an "Выровнять секции" link that triggers the align-sections operation.
+ */
 export function SelectionIndicator({ selectedCount }: { selectedCount: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>

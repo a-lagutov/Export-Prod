@@ -8,6 +8,11 @@ import { useMemo } from 'react'
 import type { TreeNode } from '../../../entities/frame/model/types'
 import type { FlatRow } from '../../../entities/frame/model/tree'
 
+/**
+ * Sub-screen for viewing and editing per-frame size limits.
+ * Supports two views toggled in the header: tree (collapsible hierarchy) and table (flat list).
+ * Search is applied to both views via the fixed header input.
+ */
 export function ResizeLimitsScreen({
   tree,
   frameSizes,

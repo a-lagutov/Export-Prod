@@ -10,6 +10,10 @@ import {
 } from '../../../shared/lib/figma'
 import * as config from '../../../shared/config'
 
+/**
+ * Registers all code-thread message handlers for the place-sections feature:
+ * `get-sections`, `place-frames`, and `align-sections`.
+ */
 export function register(): void {
   on('get-sections', () => {
     emit('sections-data', { sections: getSectionsHierarchy() })

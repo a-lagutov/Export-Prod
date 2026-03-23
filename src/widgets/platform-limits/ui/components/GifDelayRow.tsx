@@ -2,6 +2,10 @@ import { useRef } from 'react'
 import { Text } from '@create-figma-plugin/ui'
 import { NumInput } from '../../../../shared/ui/NumInput'
 
+/**
+ * Full-width row for configuring the GIF frame delay in seconds.
+ * Clicking anywhere on the row focuses the numeric input.
+ */
 export function GifDelayRow({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   return (

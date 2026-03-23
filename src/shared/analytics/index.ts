@@ -8,6 +8,12 @@ declare const __DEV__: boolean
 // Use a session-scoped ID (a new ID per plugin open is acceptable for analytics).
 const SESSION_ID = 'session_' + Math.random().toString(36).slice(2) + Date.now().toString(36)
 
+/**
+ * Sends an analytics event to PostHog. Fire-and-forget — errors are silently ignored.
+ * No-op if `POSTHOG_KEY` is not set (e.g. in local dev without `.env.production.local`).
+ * @param event - Event name (e.g. `"export_started"`).
+ * @param props - Optional additional properties to include with the event.
+ */
 export function track(event: string, props?: Record<string, unknown>): void {
   if (!__POSTHOG_KEY__) return
   fetch(`${__POSTHOG_HOST__}/capture/`, {

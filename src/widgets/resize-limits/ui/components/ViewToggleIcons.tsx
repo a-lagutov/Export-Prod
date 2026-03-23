@@ -1,3 +1,4 @@
+/** SVG icon representing tree/hierarchy view for the view toggle in the `Resizes` header. */
 export function TreeIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -9,6 +10,7 @@ export function TreeIcon() {
   )
 }
 
+/** SVG icon representing flat table view for the view toggle in the `Resizes` header. */
 export function TableIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

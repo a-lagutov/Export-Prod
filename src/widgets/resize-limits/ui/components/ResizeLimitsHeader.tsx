@@ -1,6 +1,11 @@
 import { SegmentedControl, SearchTextbox } from '@create-figma-plugin/ui'
 import { TreeIcon, TableIcon } from './ViewToggleIcons'
 
+/**
+ * Fixed header for the `Resizes` sub-screen.
+ * Contains a back arrow row (full-width clickable), tree/table toggle icons (absolute-positioned
+ * above the back row to intercept clicks without propagation), and a search input.
+ */
 export function ResizeLimitsHeader({
   view,
   onViewChange,

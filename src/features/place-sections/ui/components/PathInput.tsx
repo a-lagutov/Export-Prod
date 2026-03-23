@@ -3,6 +3,13 @@ import { Textbox } from '@create-figma-plugin/ui'
 import { ComboboxDropdown } from '../../../../shared/ui/ComboboxDropdown'
 import type { SectionFormat } from '../../../../entities/frame/model/types'
 
+/**
+ * Computes autocomplete suggestions for a slash-separated path input based on the current depth.
+ * Depth 0 → format names; depth 1 → channels; depth 2 → platforms; depth 3 → creatives.
+ * Returns full path completions (e.g. `"JPG/Channel/Platform"`) to replace the entire input value.
+ * @param input - Current path string, e.g. `"JPG/Channel/"`.
+ * @param sections - Available sections hierarchy from the code thread.
+ */
 function getPathCompletions(input: string, sections: SectionFormat[]): string[] {
   const parts = input.split('/')
   const depth = parts.length - 1
@@ -33,6 +40,11 @@ function getPathCompletions(input: string, sections: SectionFormat[]): string[] 
     .map((cr) => `${prev.join('/')}/${cr}`)
 }
 
+/**
+ * Single-field path input for the "Путь" mode in the Place tab.
+ * Accepts a slash-separated path (`Format/Channel/Platform/Creative`) with segment-aware autocomplete.
+ * Shows a breadcrumb hint row highlighting the currently active segment.
+ */
 export function PathInput({
   value,
   onChange,
@@ -46,6 +58,7 @@ export function PathInput({
   const completions = useMemo(() => getPathCompletions(value, sections), [value, sections])
   const parts = value.split('/')
 
+  /** Applies a selected autocomplete completion and appends "/" if the path is not yet fully specified. */
   function handleSelect(completion: string) {
     // If less than 4 parts, append "/" to prompt next segment
     const completionParts = completion.split('/')

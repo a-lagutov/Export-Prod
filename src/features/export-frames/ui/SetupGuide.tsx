@@ -1,3 +1,7 @@
+/**
+ * Empty-state guide shown on the Export tab when no valid section hierarchy is found on the page.
+ * Explains the required 4-level structure, creative naming conventions, and links to the wiki.
+ */
 export function SetupGuide() {
   return (
     <div

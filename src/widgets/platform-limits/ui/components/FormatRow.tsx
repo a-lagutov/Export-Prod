@@ -2,6 +2,11 @@ import { useRef } from 'react'
 import { TagBadge } from '../../../../shared/ui/TagBadge'
 import { NumInput } from '../../../../shared/ui/NumInput'
 
+/**
+ * Row for setting the default size limit for all platforms within a given format.
+ * Contains a format-only export button, a `TagBadge`, and a numeric limit input.
+ * Clicking anywhere on the row focuses the input.
+ */
 export function FormatRow({
   format,
   value,

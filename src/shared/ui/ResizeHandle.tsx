@@ -1,6 +1,8 @@
 import { emit } from '@create-figma-plugin/utilities'
 
+/** Drag handle in the bottom-right corner that lets the user resize the plugin window height. */
 export function ResizeHandle() {
+  /** Begins tracking mouse movement on mousedown to compute new window height. */
   function onMouseDown(e: MouseEvent) {
     e.preventDefault()
     const startY = e.clientY

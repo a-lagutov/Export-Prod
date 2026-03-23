@@ -1,5 +1,10 @@
 import { declension } from '../../../../shared/lib/declension'
 
+/**
+ * Navigation button on the main export screen that opens the `Resizes` sub-screen.
+ * Accepts hover/pressed state as props (instead of CSS classes) because inline `background`
+ * would override CSS `:hover` rules.
+ */
 export function ResizeLimitsButton({
   count,
   hovered,

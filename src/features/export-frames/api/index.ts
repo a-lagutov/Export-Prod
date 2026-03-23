@@ -10,10 +10,15 @@ import * as config from '../../../shared/config'
 
 export let isExporting = false
 
+/** Forwards a log message from the code thread to the UI thread via the `code-log` message. */
 function codeLog(message: string, data?: unknown): void {
   emit('code-log', { level: 'log', message, data })
 }
 
+/**
+ * Checks whether a Figma node belongs to the currently active page by walking up the parent chain.
+ * Detached nodes (e.g. just deleted) are conservatively treated as being on the current page.
+ */
 function isOnCurrentPage(node: BaseNode): boolean {
   let n: BaseNode | null = node
   while (n) {
@@ -24,6 +29,11 @@ function isOnCurrentPage(node: BaseNode): boolean {
   return true
 }
 
+/**
+ * Exports the frame at the given index from the current export queue and emits the result to the UI thread.
+ * For GIF items, exports all slide frames and emits `gif-data`; for others, emits `frame-data`.
+ * @param index - Zero-based index into the `exportItems` array.
+ */
 async function sendFrame(index: number): Promise<void> {
   const item = exportItems[index]
   const total = exportItems.length
@@ -64,6 +74,11 @@ async function sendFrame(index: number): Promise<void> {
   }
 }
 
+/**
+ * Registers all code-thread message handlers for the export feature:
+ * `scan`, `rename-frames`, `start-export`, `request-frame`.
+ * Also sets up a debounced `documentchange` listener for auto-rescanning on page edits.
+ */
 export function register(): void {
   on('scan', () => {
     const result = scanPage()

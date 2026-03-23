@@ -10,6 +10,11 @@ import { PathInput } from '../../../features/place-sections/ui/components/PathIn
 import { SectionTreePanel } from '../../../widgets/section-tree/ui/SectionTreePanel'
 import type { SectionFormat } from '../../../entities/frame/model/types'
 
+/**
+ * Place tab root component. Lets the user assign selected Figma frames to a section hierarchy.
+ * Supports two input modes: "fields" (separate dropdowns) and "path" (slash-separated input).
+ * Emits `get-sections` on mount and listens for `sections-data`, `selection-change`, and `place-result`.
+ */
 export function OrganizePage() {
   const [sections, setSections] = useState<SectionFormat[]>([])
   const [selectedCount, setSelectedCount] = useState(0)
@@ -47,6 +52,7 @@ export function OrganizePage() {
   const creativeOptions = platformSection ? platformSection.creatives : []
 
   // Effective values based on mode
+  /** Returns the active format/channel/platform/creative values from whichever input mode is selected. */
   function getEffectiveValues() {
     if (inputMode === 'fields') {
       return { fmt: format.trim(), ch: channel.trim(), pl: platform.trim(), cr: creative.trim() }
@@ -58,6 +64,7 @@ export function OrganizePage() {
   const { fmt: eFmt, ch: eCh, pl: ePl, cr: eCr } = getEffectiveValues()
   const canPlace = !!(eFmt && eCh && ePl && eCr && selectedCount > 0)
 
+  /** Clears the previous result, tracks the analytics event, and emits `place-frames` to the code thread. */
   function doPlace(fmt: string, ch: string, pl: string, cr: string) {
     setResult(null)
     track('frames_placed', {
