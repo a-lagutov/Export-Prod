@@ -30,12 +30,15 @@ jobs:
 
       - name: Get plugin name
         id: plugin
-        run: echo "name=$(jq -r '.name | gsub(" "; "-")' dist/manifest.json)" >> $GITHUB_OUTPUT
+        run: |
+          NAME=$(jq -r '.name | gsub(" "; "-")' dist/manifest.json)
+          VERSION="${GITHUB_REF_NAME}"
+          echo "filename=${NAME}-${VERSION}-release" >> $GITHUB_OUTPUT
 
       - name: Zip dist
-        run: zip -r "${{ steps.plugin.outputs.name }}.zip" dist/
+        run: zip -r "${{ steps.plugin.outputs.filename }}.zip" dist/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.3.2
         with:
-          files: "${{ steps.plugin.outputs.name }}.zip"
+          files: "${{ steps.plugin.outputs.filename }}.zip"
