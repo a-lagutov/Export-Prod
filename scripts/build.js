@@ -1,4 +1,5 @@
 const esbuild = require('esbuild')
+const minifyHtml = require('@minify-html/node')
 const fs = require('fs')
 const path = require('path')
 
@@ -56,11 +57,19 @@ envDefine['__DEV__'] = JSON.stringify(mode === 'development')
 envDefine['__LOG_SERVER__'] = JSON.stringify(env.LOG_SERVER ?? '')
 
 async function build() {
+  // 0. Clean dist/ before building to avoid stale artifacts
+  const distDir = path.join(root, 'dist')
+  if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true })
+  }
+  fs.mkdirSync(distDir)
+
   // 1. Bundle app/figma.ts → dist/code.js
   await esbuild.build({
     entryPoints: [path.join(root, 'src/app/figma.ts')],
     bundle: true,
     outfile: path.join(root, 'dist/code.js'),
+    minify: true,
     target: 'es2017',
   })
   console.log('✓ dist/code.js')
@@ -82,11 +91,16 @@ async function build() {
     },
   }
 
-  // 3. Bundle app/index.tsx → dist/ui.js (and dist/ui.css if any CSS imports exist)
-  await esbuild.build({
+  // 3. Bundle app/index.tsx → JS + CSS in memory (write: false avoids intermediate files on disk)
+  const uiResult = await esbuild.build({
     entryPoints: { ui: path.join(root, 'src/app/index.tsx') },
     bundle: true,
     outdir: path.join(root, 'dist'),
+    write: false,
+    // minifyIdentifiers must stay false: CSS module class names are shortened independently
+    // per file, causing collisions (.t, .n etc. end up defined 3–9 times) that break styles.
+    minifyWhitespace: true,
+    minifySyntax: true,
     jsx: 'automatic',
     jsxImportSource: 'preact',
     alias: {
@@ -102,25 +116,18 @@ async function build() {
     target: 'es2017',
     plugins: [fixFigmaPluginCssImports],
   })
-  console.log('✓ dist/ui.js')
 
   // 4. Generate dist/ui.html — inline JS and CSS (Figma doesn't resolve external files)
-  const jsContent = fs.readFileSync(path.join(root, 'dist/ui.js'), 'utf-8')
-  const hasCss = fs.existsSync(path.join(root, 'dist/ui.css'))
-  const cssContent = hasCss ? fs.readFileSync(path.join(root, 'dist/ui.css'), 'utf-8') : ''
+  const jsFile = uiResult.outputFiles.find((f) => f.path.endsWith('.js'))
+  const cssFile = uiResult.outputFiles.find((f) => f.path.endsWith('.css'))
+  const jsContent = jsFile ? Buffer.from(jsFile.contents).toString('utf-8') : ''
+  const cssContent = cssFile ? Buffer.from(cssFile.contents).toString('utf-8') : ''
   const cssTag = cssContent ? `<style>${cssContent}</style>` : ''
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-${cssTag}
-</head>
-<body>
-<div id="create-figma-plugin"></div>
-<script>${jsContent}</script>
-</body>
-</html>
-`
+  const rawHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">${cssTag}</head><body><div id="create-figma-plugin"></div><script>${jsContent}</script></body></html>`
+  const html = minifyHtml.minify(Buffer.from(rawHtml), {
+    minify_css: false, // already minified by esbuild
+    minify_js: false,  // already minified by esbuild
+  })
   fs.writeFileSync(path.join(root, 'dist/ui.html'), html)
   console.log('✓ dist/ui.html')
 

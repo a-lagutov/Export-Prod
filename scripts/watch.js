@@ -46,10 +46,12 @@ const gifWorkerContent = fs.readFileSync(
   'utf-8',
 )
 
-function writeHtml() {
-  const jsContent = fs.readFileSync(path.join(root, 'dist/ui.js'), 'utf-8')
-  const hasCss = fs.existsSync(path.join(root, 'dist/ui.css'))
-  const cssContent = hasCss ? fs.readFileSync(path.join(root, 'dist/ui.css'), 'utf-8') : ''
+/**
+ * Writes the inlined ui.html from in-memory JS and CSS strings.
+ * @param {string} jsContent - Bundled JS to inline in a script tag.
+ * @param {string} cssContent - Bundled CSS to inline in a style tag.
+ */
+function writeHtml(jsContent, cssContent) {
   const cssTag = cssContent ? `<style>${cssContent}</style>` : ''
   fs.writeFileSync(
     path.join(root, 'dist/ui.html'),
@@ -94,6 +96,13 @@ function writeManifest() {
   console.log('✓ dist/manifest.json')
 }
 
+// Clean dist/ once on startup to avoid stale artifacts; then regenerate manifest
+const distDir = path.join(root, 'dist')
+if (fs.existsSync(distDir)) {
+  fs.rmSync(distDir, { recursive: true })
+}
+fs.mkdirSync(distDir)
+
 writeManifest()
 fs.watch(path.join(root, 'manifest.js'), () => writeManifest())
 
@@ -109,6 +118,8 @@ async function watch() {
     entryPoints: { ui: path.join(root, 'src/app/index.tsx') },
     bundle: true,
     outdir: path.join(root, 'dist'),
+    // write: false — JS/CSS stay in memory; only ui.html is written to dist/
+    write: false,
     jsx: 'automatic',
     jsxImportSource: 'preact',
     alias: {
@@ -122,11 +133,18 @@ async function watch() {
     },
     loader: { '.css': 'css' },
     target: 'es2017',
-    plugins: [fixFigmaPluginCssImports,
+    plugins: [
+      fixFigmaPluginCssImports,
       {
         name: 'write-html',
         setup(build) {
-          build.onEnd(() => writeHtml())
+          build.onEnd((result) => {
+            const jsFile = result.outputFiles?.find((f) => f.path.endsWith('.js'))
+            const cssFile = result.outputFiles?.find((f) => f.path.endsWith('.css'))
+            const jsContent = jsFile ? Buffer.from(jsFile.contents).toString('utf-8') : ''
+            const cssContent = cssFile ? Buffer.from(cssFile.contents).toString('utf-8') : ''
+            writeHtml(jsContent, cssContent)
+          })
         },
       },
     ],
