@@ -144,17 +144,20 @@ src/
 
 **Build pipeline (`scripts/build.js`):**
 
-1. esbuild bundles `src/app/figma.ts` → `dist/code.js`
-2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
-3. Loads env files (CRA priority order), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
-4. esbuild bundles `src/app/index.tsx` → `dist/ui.js` + `dist/ui.css` (entry key named `ui` to preserve output filename). JSX uses `preact/jsx-runtime`; React imports (`react`, `react-dom`, `react/jsx-runtime`) are aliased to their Preact equivalents so React components work out of the box.
-5. Inlines `dist/ui.js` and `dist/ui.css` into `dist/ui.html`
-6. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
+1. Cleans `dist/` entirely before building to avoid stale artifacts.
+2. esbuild bundles `src/app/figma.ts` → `dist/code.js` with full minification (`minify: true`).
+3. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes its content to esbuild via `define` as `__GIF_WORKER_CONTENT__` (lazily initialized in the UI via `URL.createObjectURL`)
+4. Loads env files (CRA priority order), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
+5. esbuild bundles `src/app/index.tsx` in memory (`write: false`) with `minifyWhitespace: true` and `minifySyntax: true` — but **not** `minifyIdentifiers`, because CSS module class names are shortened independently per file, causing collisions (`.t`, `.n`, etc. end up defined multiple times) that break styles. Entry key is named `ui` to preserve output filename. JSX uses `preact/jsx-runtime`; React imports (`react`, `react-dom`, `react/jsx-runtime`) are aliased to their Preact equivalents so React components work out of the box.
+6. Reads JS and CSS from `result.outputFiles` (never written to disk), assembles the HTML wrapper, minifies it with `@minify-html/node` (HTML-level whitespace only; JS and CSS are already minified by esbuild), and writes `dist/ui.html`.
+7. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
 
 **`scripts/watch.js`** additionally:
 
+- Cleans `dist/` on startup to avoid stale artifacts.
 - Writes `dist/manifest.json` on startup (dev env, includes `devAllowedDomains`)
 - Watches `manifest.js` for changes and regenerates `dist/manifest.json` immediately
+- UI bundle also uses `write: false`; the `write-html` esbuild plugin reads JS and CSS from `result.outputFiles` and writes `dist/ui.html` on every rebuild (no intermediate `ui.js`/`ui.css` on disk in watch mode either).
 - Auto-starts `scripts/log-server.js` if `LOG_SERVER` is set; watches it for changes and hot-reloads on save
 
 **`manifest.js`** at the project root is the source of truth for the manifest — it exports a factory `(env) => ({...})`. Do not edit `dist/manifest.json` directly.
@@ -274,6 +277,7 @@ The workflow builds the plugin and attaches the ZIP (`dist/`) to the GitHub rele
 - `@create-figma-plugin/utilities` v4 — `emit`/`on` (type-safe cross-thread messaging using `[name, ...args]` array format). Used in both code thread modules and `app/index.tsx`. **Do NOT use `showUI` from utilities** — it wraps `__html__` inside a `<script>` tag, which breaks because Figma provides `__html__` as a full HTML document. Use `figma.showUI(__html__, options)` directly in `app/figma.ts` instead.
 - `@figma/plugin-typings` — TypeScript types for Figma Plugin API
 - `esbuild` — Bundler
+- `@minify-html/node` — minifies the HTML wrapper in `dist/ui.html` (devDependency; used only in `scripts/build.js`)
 - `eslint-plugin-jsdoc` — ESLint plugin that enforces JSDoc presence and structure (`jsdoc/require-jsdoc`, `jsdoc/require-param`, `jsdoc/require-returns`, `jsdoc/require-description`)
 
 ## TypeScript / IDE Notes

@@ -165,11 +165,12 @@ Communication between threads via `emit` / `on` from `@create-figma-plugin/utili
 
 #### Build Process (`scripts/build.js`)
 
-1. esbuild: `src/app/figma.ts` → `dist/code.js`
-2. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes content via esbuild `define` as `__GIF_WORKER_CONTENT__`
-3. esbuild: `src/app/index.tsx` → `dist/ui.js` + `dist/ui.css` (JSX via preact/jsx-runtime)
-4. Inline JS and CSS into `dist/ui.html` (Figma doesn't resolve external files)
-5. Calls `manifest.js(env)` and writes result to `dist/manifest.json` (env vars injected into `name`, `networkAccess.allowedDomains`, and `networkAccess.devAllowedDomains`)
+1. Cleans `dist/` before building to avoid stale artifacts.
+2. esbuild: `src/app/figma.ts` → `dist/code.js` (fully minified).
+3. Reads `gif.worker.js` from `node_modules/gif.js/dist/` and passes content via esbuild `define` as `__GIF_WORKER_CONTENT__`
+4. esbuild: `src/app/index.tsx` bundled in memory (`write: false`) with whitespace + syntax minification (identifiers are not mangled to prevent CSS module class-name collisions). JSX via `preact/jsx-runtime`.
+5. JS and CSS are read from `result.outputFiles`, assembled into an HTML wrapper, minified by `@minify-html/node`, and written to `dist/ui.html`. No intermediate `ui.js`/`ui.css` files are written to disk.
+6. Calls `manifest.js(env)` and writes result to `dist/manifest.json` (env vars injected into `name`, `networkAccess.allowedDomains`, and `networkAccess.devAllowedDomains`)
 
 `manifest.js` at the root is the source of truth for the manifest. Do not edit `dist/manifest.json` directly.
 
@@ -183,6 +184,7 @@ Communication between threads via `emit` / `on` from `@create-figma-plugin/utili
 | `@create-figma-plugin/ui` | Figma-styled UI components            |
 | `@figma/plugin-typings`   | TypeScript types for Figma Plugin API |
 | `esbuild`                 | Bundler                               |
+| `@minify-html/node`       | HTML wrapper minification (dev)       |
 
 ---
 
@@ -347,11 +349,12 @@ xxxx-yyy
 
 #### Сборка (`scripts/build.js`)
 
-1. esbuild: `src/app/figma.ts` → `dist/code.js`
-2. Читает `gif.worker.js` из `node_modules/gif.js/dist/` и передаёт содержимое через esbuild `define` как `__GIF_WORKER_CONTENT__`
-3. esbuild: `src/app/index.tsx` → `dist/ui.js` + `dist/ui.css` (JSX через preact/jsx-runtime)
-4. Инлайн JS и CSS в `dist/ui.html` (Figma не резолвит внешние файлы)
-5. Вызывает `manifest.js(env)` и записывает результат в `dist/manifest.json` (env-переменные подставляются в `name`, `networkAccess.allowedDomains` и `networkAccess.devAllowedDomains`)
+1. Очищает `dist/` перед сборкой, чтобы не оставалось устаревших артефактов.
+2. esbuild: `src/app/figma.ts` → `dist/code.js` (полная минификация).
+3. Читает `gif.worker.js` из `node_modules/gif.js/dist/` и передаёт содержимое через esbuild `define` как `__GIF_WORKER_CONTENT__`
+4. esbuild: `src/app/index.tsx` бандлируется в памяти (`write: false`) с минификацией пробелов и синтаксиса (имена идентификаторов не сокращаются, чтобы избежать коллизий имён классов CSS-модулей). JSX через `preact/jsx-runtime`.
+5. JS и CSS читаются из `result.outputFiles`, собираются в HTML-обёртку, минифицируются через `@minify-html/node` и записываются в `dist/ui.html`. Промежуточные файлы `ui.js`/`ui.css` на диск не записываются.
+6. Вызывает `manifest.js(env)` и записывает результат в `dist/manifest.json` (env-переменные подставляются в `name`, `networkAccess.allowedDomains` и `networkAccess.devAllowedDomains`)
 
 `manifest.js` в корне — источник истины для манифеста. Не редактируйте `dist/manifest.json` напрямую.
 
@@ -365,3 +368,4 @@ xxxx-yyy
 | `@create-figma-plugin/ui` | Компоненты в стиле Figma          |
 | `@figma/plugin-typings`   | TypeScript-типы Figma Plugin API  |
 | `esbuild`                 | Бандлер                           |
+| `@minify-html/node`       | Минификация HTML-обёртки (dev)    |
