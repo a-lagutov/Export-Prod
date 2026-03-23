@@ -36,7 +36,6 @@ export function PathField({
       </span>
       <div style={{ flex: 1, position: 'relative' }}>
         <Textbox
-          variant="border"
           value={value}
           placeholder={placeholder}
           onValueInput={onChange}

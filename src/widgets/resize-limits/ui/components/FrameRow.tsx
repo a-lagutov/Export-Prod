@@ -50,7 +50,6 @@ export function FrameRow({
       </span>
       <div ref={containerRef} style={{ flexShrink: 0, width: 64 }}>
         <TextboxNumeric
-          variant="border"
           value={frameSizes[key] ?? ''}
           onValueInput={(v) => onFrameSizeChange(key, v)}
           suffix="МБ"

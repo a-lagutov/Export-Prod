@@ -20,7 +20,6 @@ export function NumInput({
   return (
     <div ref={containerRef}>
       <TextboxNumeric
-        variant="border"
         value={value}
         onValueInput={onChange}
         suffix={suffix}

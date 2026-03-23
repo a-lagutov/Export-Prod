@@ -69,7 +69,6 @@ export function PathInput({
   return (
     <div style={{ position: 'relative' }}>
       <Textbox
-        variant="border"
         value={value}
         placeholder="GIF/Канал/Площадка/Креатив"
         onValueInput={onChange}
