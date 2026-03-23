@@ -97,9 +97,10 @@ src/
       PlatformLimitsSection.tsx           per-format/platform limits section on the main export screen
       components/                         FormatRow, PlatformRow, GifDelayRow
     section-tree/ui/
-      SectionTreePanel.tsx                "Add to section" panel (search + tree)
+      SectionTreePanel.tsx                "Add to section" panel (search + tree/table view toggle)
       components/                         SectionTree, SectionFormatNode, SectionChannelNode,
-                                          SectionPlatformNode, CreativeRow
+                                          SectionPlatformNode, CreativeRow,
+                                          SectionTableHeader, SectionTableRow
   features/
     export-frames/
       api/
@@ -121,7 +122,8 @@ src/
         types.ts                          FrameTree, ScanResult, ExportFrame and other shared types
         tree.ts                           FlatRow type, filterTree, flattenToRows, filterFlatRows, countFrames
   shared/
-    ui/                                   TagBadge, NumInput, ProgressBar, ResizeHandle, TabBar, ComboboxDropdown
+    ui/                                   TagBadge, NumInput, ProgressBar, ResizeHandle, TabBar, ComboboxDropdown,
+                                          FlatTableHeader, FlatTableRow, SearchInput
     lib/
       figma.ts                            isSection, isFrame, fitSectionToChildren, resizeSectionOnly, setSectionFill
       compression.ts                      pngBytesToCanvas, convertFrame, binary-search compression
@@ -132,6 +134,7 @@ src/
       gif.d.ts                            ambient type declaration for gif.js npm package
     config/
       index.ts                            all tunable constants + FORMATS
+      strings.ts                          centralised string constants for all user-visible UI text
     analytics/
       index.ts                            PostHog analytics
     logger/
@@ -208,13 +211,14 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 
 - **Resizes screen**: per-frame size limits live on a dedicated sub-screen rendered by `ResizeLimitsScreen` (`src/widgets/resize-limits/ui/ResizeLimitsScreen.tsx`), opened via the "Resizes" button on the main export screen. The button shows the total frame count. The sub-screen has a fixed header (`ResizeLimitsHeader`) with a back arrow (`←`), the title, a tree/table view toggle (icon buttons), and a search input pinned below the title row. `screen` state (`'main' | 'resize-limits'`) lives in `ExportPage`. `resizeLimitsView` state (`'tree' | 'table'`) lives in `useExport`.
 - **Tree view** (`resizeLimitsView === 'tree'`): collapsible format/channel/platform/creative nodes; sticky format headers; all nodes expanded by default (`defaultExpanded={true}`). Rendered via `TreeNodeView` + `FrameRow`.
-- **Table view** (`resizeLimitsView === 'table'`): flat list of all frames with a sticky column header row (Формат / Креатив / Ресайз / Лимит). Each row rendered by `TableRow` component. The creative column cell has a `title` attribute with the full path (`channel › platform › creative`). Data comes from `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
+- **Table view** (`resizeLimitsView === 'table'`): flat list of all frames rendered by `TableRow` using the shared `FlatTableRow` layout. The sticky header is `TableHeader`, which wraps `FlatTableHeader` with an extra "Ресайз" column (frame name + optional GIF frame count) and a "Лимит" column. Columns: Формат | Канал | Площадка | Креатив | Ресайз | Лимит. Data comes from `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
 - **Per-frame size limits**: `FrameRow` (tree) and `TableRow` (table) components — hover highlight (`--figma-color-bg-hover`), click-to-focus on limit input (via `containerRef` + `querySelector('input')`)
 - **Per-platform size limits**: global limits per format+platform combination, stored in `platformSizes` as `"${format}/${platformName}"` keys. Each platform row is a `PlatformRow` component with hover + click-to-focus.
 - **Per-format size limits**: default limit for all platforms of a given format, stored in `platformSizes` as `"${format}"` key (no platform suffix). Rendered by `FormatRow` component. Priority in `getLimit`: per-frame > per-platform > per-format.
 - **GIF delay row**: `GifDelayRow` component — full-width hover, click-to-focus on the input.
-- **Numeric inputs** (`NumInput`, `FrameRow`, `TableRow`, `FormatRow`, `PlatformRow`, `GifDelayRow`): use `TextboxNumeric` from `@create-figma-plugin/ui` with `variant="border"` and `validateOnBlur`. `NumInput` (`src/shared/ui/NumInput.tsx`) wraps `TextboxNumeric` and accepts a `containerRef` so callers can focus the inner input via `containerRef.current?.querySelector('input')?.focus()`. Do not replace with native `<input type="number">`.
-- **Text inputs** (`PathField`, `PathInput`): use `Textbox` from `@create-figma-plugin/ui` with `variant="border"` and `onValueInput` callback.
+- **Numeric inputs** (`NumInput`, `FrameRow`, `TableRow`, `FormatRow`, `PlatformRow`, `GifDelayRow`): use `TextboxNumeric` from `@create-figma-plugin/ui` with `variant="border"` and `validateOnBlur`. `NumInput` (`src/shared/ui/NumInput.tsx`) wraps `TextboxNumeric` and accepts a `containerRef` so callers can focus the inner input via `containerRef.current?.querySelector('input')?.focus()`. The optional `suffix` prop (e.g. `"МБ"`, `"сек"`) is rendered as an absolutely positioned label overlay (`z-index: 3`) inside the wrapper div, styled to match the native Figma color-input `%` label — it is **not** passed to `TextboxNumeric`. The `.num-input-suffix` CSS class shrinks the inner input's right padding to avoid text overlapping the suffix. Do not replace with native `<input type="number">`.
+- **Text inputs** (`PathField`): use `Textbox` from `@create-figma-plugin/ui` with `variant="border"` and `onValueInput` callback.
+- **Path input** (`PathInput`): uses `SearchTextbox` from `@create-figma-plugin/ui` with `clearOnEscapeKeyDown`. The search icon is visually hidden via the `.path-input-wrap` CSS class injected in `Root`.
 - **Search/filter**: search input is in the fixed header of the Resizes screen (not in the scroll area). In tree mode it filters via `filterTree`; in table mode via `filterFlatRows`.
 - **Path mode**: segmented control to include or strip the format folder from ZIP paths
 - **GIF delay**: configurable frame delay (seconds)
@@ -227,8 +231,12 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
   - `.back-row` — full-width clickable area in the Resizes sub-screen header (arrow + title); toggle buttons sit above it via `position: absolute` with `stopPropagation`
   - `.tree-header` — collapsible node headers in both tree views
   - `.limit-row` — rows in "Лимиты по площадкам" and the GIF delay row; full-width via `margin: 0 -N px` where needed
+  - `.num-input-suffix` — wrapper div around `TextboxNumeric` when a suffix is present; shrinks input right padding so the suffix overlay does not overlap the typed value
+  - `.path-input-wrap` — wrapper div around `SearchTextbox` in `PathInput`; hides the search icon via CSS so the field looks like a plain text input
+  - `.path-field-input` — wrapper div around `Textbox` inputs in "По полям" mode; increases input height to `var(--space-32)`
   - Resizes nav button uses `useState` (not CSS class) because its inline `background` would override CSS `:hover`
   - Sticky format headers in tree use `useState` for the same reason
+  - Sticky table headers (`FlatTableHeader`) use `z-index: 10`
 - **Resize handle**: drag bottom-right corner to resize the plugin window
 - **Layout**: `Root` is a flex column filling 100% of the iframe (`html, body, #create-figma-plugin { height: 100%; overflow: hidden }`). The tab bar sits at the top; each tab content fills the remaining height.
 - **Export tab scroll**: the content area (`flex: 1, overflow-y: auto`) scrolls independently. The bottom action bar (export button / progress / download) is a normal flow element pinned at the bottom of the flex column — not `position: fixed`. The scrollbar track never overlaps the button zone.
@@ -239,11 +247,19 @@ Frame processing is sequential (one at a time) to avoid overloading the Figma pl
 
 ### Place tab (Разместить)
 
-- Select frames on the page, choose Format / Channel / Platform / Creative, click "Поместить в секции"
-- Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides)
-- **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform)
-- **New format section positioning**: if other format sections already exist on the page, the new one is placed `FORMAT_SECTION_GAP` px to the right of the rightmost; if no format sections exist yet, it is placed at the absolute position of the selected frames and automatically selected in Figma
+The Place tab has three input modes selected via a segmented control:
+
+- **По полям** (`'fields'`): separate `PathField` inputs for Format, Channel, Platform, Creative with autocomplete dropdowns. Input height increased via `.path-field-input` CSS class.
+- **Путь** (`'path'`): single `PathInput` with slash-separated path and segment-aware autocomplete. Uses `SearchTextbox` with a built-in clear button; the search icon is hidden via `.path-input-wrap` CSS class.
+- **Секции** (`'sections'`): full-screen `SectionTreePanel` fills the remaining tab height (`flex: 1`). Shows existing sections with a search input and tree/table view toggle. Platform nodes are collapsible (same style as channel nodes). The bottom action bar and "Поместить" button are hidden in this mode; placement is done via per-creative `+` buttons in the panel. A warning bar is shown at the bottom when no frames are selected.
+
+Common behaviours:
+
+- Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides).
+- **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform).
+- **New format section positioning**: if other format sections already exist on the page, the new one is placed `FORMAT_SECTION_GAP` px to the right of the rightmost; if no format sections exist yet, it is placed at the absolute position of the selected frames and automatically selected in Figma.
 - **Section fitting** (`fitSectionToChildren` in `src/shared/lib/figma.ts`): works in local coordinates — shifts the section origin so content has `padding` space on all sides, compensates children's local positions to keep their absolute positions unchanged, then resizes. Uses local coords (not `absoluteBoundingBox`) to avoid stale values after `appendChild`. Default padding is `SECTION_FIT_PADDING` (see `shared/config/index.ts`).
+- **`SelectionIndicator`** renders only the "Выровнять секции" link — it no longer accepts or displays `selectedCount`.
 
 ## Analytics (`src/shared/analytics/index.ts`)
 
@@ -273,7 +289,7 @@ The workflow builds the plugin and attaches the ZIP (`dist/`) to the GitHub rele
 - `jszip` — ZIP assembly in the browser
 - `gif.js` — GIF encoding with Web Workers (worker script injected via esbuild `define`)
 - `preact` — UI framework (used via React-compat alias so components can use React imports)
-- `@create-figma-plugin/ui` v4 — Figma-styled UI components (tracks current Figma design system). Used components: `Button`, `Text`, `Muted`, `VerticalSpace`, `Textbox`, `TextboxNumeric`, `render`. All inputs use `variant="border"`. `render(Component)(rootEl, props)` mounts the UI.
+- `@create-figma-plugin/ui` v4 — Figma-styled UI components (tracks current Figma design system). Used components: `Button`, `Text`, `Muted`, `VerticalSpace`, `Textbox`, `SearchTextbox`, `TextboxNumeric`, `SegmentedControl`, `render`. All inputs use `variant="border"`. `render(Component)(rootEl, props)` mounts the UI.
 - `@create-figma-plugin/utilities` v4 — `emit`/`on` (type-safe cross-thread messaging using `[name, ...args]` array format). Used in both code thread modules and `app/index.tsx`. **Do NOT use `showUI` from utilities** — it wraps `__html__` inside a `<script>` tag, which breaks because Figma provides `__html__` as a full HTML document. Use `figma.showUI(__html__, options)` directly in `app/figma.ts` instead.
 - `@figma/plugin-typings` — TypeScript types for Figma Plugin API
 - `esbuild` — Bundler

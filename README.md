@@ -86,10 +86,16 @@ Frames within a creative are grouped into animations by Y-position (frames on th
 
 ### Placing Frames (Place Tab)
 
-The **Place** tab lets you organize frames into the 4-level section hierarchy directly from the plugin:
+The **Place** tab lets you organize frames into the 4-level section hierarchy. Three input modes are available via a segmented control:
+
+- **По полям** — separate fields for Format / Channel / Platform / Creative with autocomplete.
+- **Путь** — single slash-separated path input (`Format/Channel/Platform/Creative`) with segment-aware autocomplete and a breadcrumb hint.
+- **Секции** — browse existing sections on the page in a searchable tree or table view; click **+** next to any creative to place the selected frames there directly.
+
+In "По полям" and "Путь" modes:
 
 1. Select one or more frames on the page.
-2. Fill in Format / Channel / Platform / Creative fields.
+2. Fill in Format / Channel / Platform / Creative.
 3. Click **"Поместить в секции"** — the plugin creates missing sections, places the frames inside the creative section, and resizes all parent sections to fit.
 
 Layout rules:
@@ -117,7 +123,7 @@ Limits are set in the plugin interface — globally per platform or individually
 The screen has a search field and two view modes toggled by icons in the header:
 
 - **Tree** — collapsible hierarchy (Format → Channel → Platform → Creative → frames), all nodes expanded by default.
-- **Table** — flat list with a sticky header (Format / Creative / Size / Limit columns). Hovering a row shows the full path (channel › platform › creative) as a tooltip.
+- **Table** — flat list with a sticky header (Format / Channel / Platform / Creative / Size / Limit columns). Each row includes the frame name and, for GIF, the frame count in the Size column.
 
 #### Compression Algorithm
 
@@ -150,12 +156,13 @@ Two-thread Figma plugin model with Feature-Sliced Design:
 | `src/pages/organize/ui/OrganizePage.tsx`        | —                          | Place tab component                                                                            |
 | `src/widgets/resize-limits/ui/`                 | —                          | Per-frame size limits sub-screen (tree/table) + components                                     |
 | `src/widgets/platform-limits/ui/`               | —                          | Per-format/platform limits section + `FormatRow`, `PlatformRow`, `GifDelayRow`                 |
-| `src/widgets/section-tree/ui/`                  | —                          | Section tree panel + node components                                                           |
+| `src/widgets/section-tree/ui/`                  | —                          | Section tree panel (tree/table view) + node components                                         |
 | `src/features/export-frames/model/useExport.ts` | —                          | Custom hook: all export state, effects, and handlers                                           |
 | `src/features/export-frames/ui/SetupGuide.tsx`  | —                          | Empty-state setup instructions                                                                 |
 | `src/features/place-sections/ui/components/`    | —                          | `SelectionIndicator`, `PlaceResultMessage`, `PathField`, `PathInput`                           |
 | `src/entities/frame/model/`                     | —                          | Frame/tree types and tree filtering utilities                                                  |
-| `src/shared/ui/`                                | —                          | Shared UI: `TagBadge`, `NumInput`, `ProgressBar`, `TabBar`, `ResizeHandle`, `ComboboxDropdown` |
+| `src/shared/ui/`                                | —                          | Shared UI: `TagBadge`, `NumInput`, `ProgressBar`, `TabBar`, `ResizeHandle`, `ComboboxDropdown`, `FlatTableHeader`, `FlatTableRow`, `SearchInput` |
+| `src/shared/config/strings.ts`                  | —                          | Centralised string constants for all user-visible UI text |
 | `src/shared/lib/`                               | —                          | Pure utilities: compression, GIF assembly, HTML preview, declension, Figma helpers             |
 | `src/shared/config/index.ts`                    | —                          | Central config: window size, layout constants, compression parameters, `FORMATS`               |
 | `src/shared/analytics/index.ts`                 | —                          | PostHog analytics                                                                              |
@@ -270,10 +277,16 @@ xxxx-yyy
 
 ### Размещение фреймов (вкладка «Разместить»)
 
-Вкладка **Разместить** позволяет раскладывать фреймы по 4-уровневой иерархии секций прямо из плагина:
+Вкладка **Разместить** позволяет раскладывать фреймы по 4-уровневой иерархии секций. Доступны три режима ввода (сегментированный контрол):
+
+- **По полям** — отдельные поля Формат / Канал / Площадка / Креатив с автодополнением.
+- **Путь** — единое поле со слэш-разделителем (`Формат/Канал/Площадка/Креатив`) и контекстным автодополнением по сегментам.
+- **Секции** — просмотр существующих секций страницы в виде дерева или таблицы с поиском; нажмите **+** рядом с нужным креативом, чтобы сразу поместить туда выделенные фреймы.
+
+В режимах «По полям» и «Путь»:
 
 1. Выделите один или несколько фреймов на странице.
-2. Заполните поля Формат / Канал / Площадка / Креатив.
+2. Заполните нужные поля.
 3. Нажмите **«Поместить в секции»** — плагин создаст недостающие секции, поместит фреймы в секцию креатива и обновит размеры всех родительских секций.
 
 Правила раскладки:
@@ -301,7 +314,7 @@ xxxx-yyy
 На экране есть строка поиска и два режима отображения, переключаемых иконками в заголовке:
 
 - **Дерево** — раскрываемая иерархия (Формат → Канал → Площадка → Креатив → фреймы), все узлы раскрыты по умолчанию.
-- **Таблица** — плоский список с прилипающей шапкой (Формат / Креатив / Ресайз / Лимит). При наведении на строку отображается полный путь (канал › площадка › креатив) как подсказка.
+- **Таблица** — плоский список с прилипающей шапкой (Формат / Канал / Площадка / Креатив / Ресайз / Лимит). В колонке «Ресайз» отображается имя фрейма и, для GIF, количество кадров.
 
 #### Алгоритм сжатия
 
@@ -334,12 +347,13 @@ xxxx-yyy
 | `src/pages/organize/ui/OrganizePage.tsx`        | —                          | Компонент вкладки «Разместить»                                                                        |
 | `src/widgets/resize-limits/ui/`                 | —                          | Экран лимитов по ресайзам (дерево/таблица) + компоненты                                               |
 | `src/widgets/platform-limits/ui/`               | —                          | Секция лимитов по площадкам + `FormatRow`, `PlatformRow`, `GifDelayRow`                               |
-| `src/widgets/section-tree/ui/`                  | —                          | Панель дерева секций + компоненты узлов                                                               |
+| `src/widgets/section-tree/ui/`                  | —                          | Панель дерева секций (дерево/таблица) + компоненты узлов                                              |
 | `src/features/export-frames/model/useExport.ts` | —                          | Кастомный хук: весь state, эффекты и обработчики экспорта                                             |
 | `src/features/export-frames/ui/SetupGuide.tsx`  | —                          | Инструкции для пустого состояния                                                                      |
 | `src/features/place-sections/ui/components/`    | —                          | `SelectionIndicator`, `PlaceResultMessage`, `PathField`, `PathInput`                                  |
 | `src/entities/frame/model/`                     | —                          | Типы фреймов/дерева и утилиты фильтрации дерева                                                       |
-| `src/shared/ui/`                                | —                          | Общие компоненты: `TagBadge`, `NumInput`, `ProgressBar`, `TabBar`, `ResizeHandle`, `ComboboxDropdown` |
+| `src/shared/ui/`                                | —                          | Общие компоненты: `TagBadge`, `NumInput`, `ProgressBar`, `TabBar`, `ResizeHandle`, `ComboboxDropdown`, `FlatTableHeader`, `FlatTableRow`, `SearchInput` |
+| `src/shared/config/strings.ts`                  | —                          | Централизованные строковые константы для всех пользовательских текстов интерфейса                     |
 | `src/shared/lib/`                               | —                          | Утилиты: сжатие, сборка GIF, HTML-превью, склонение, хелперы Figma                                    |
 | `src/shared/config/index.ts`                    | —                          | Центральный конфиг: размер окна, константы раскладки, параметры сжатия, `FORMATS`                     |
 | `src/shared/analytics/index.ts`                 | —                          | Аналитика PostHog                                                                                     |
