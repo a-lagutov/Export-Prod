@@ -1,11 +1,14 @@
 import type { TreeNode, ExportItem, SectionFormat } from '../model/types'
-import { isSection, isFrame } from '../../../shared/lib/figma'
+import { isSection, isExportableNode } from '../../../shared/lib/figma'
 import { FORMATS } from '../../../shared/config'
 
 // Shared export queue — written by export + place features, read by export feature
 export let exportItems: ExportItem[] = []
 
-/** Replaces the shared export queue with a new list of items. */
+/**
+ * Replaces the shared export queue with a new list of items.
+ * @param items
+ */
 export function updateExportItems(items: ExportItem[]): void {
   exportItems = items
 }
@@ -40,11 +43,11 @@ export function scanPage(): { tree: TreeNode[]; items: ExportItem[] } {
           if (!isSection(creativeNode)) continue
           const creativeTree: TreeNode = { name: creativeNode.name, type: 'creative', children: [] }
 
-          const frames = creativeNode.children.filter(isFrame)
+          const frames = creativeNode.children.filter(isExportableNode)
 
           if (format === 'gif') {
             // Group frames by name + y position
-            const groups = new Map<string, FrameNode[]>()
+            const groups = new Map<string, (FrameNode | ComponentNode | InstanceNode)[]>()
             for (const frame of frames) {
               const key = `${frame.name}_y${Math.round(frame.y)}`
               if (!groups.has(key)) groups.set(key, [])

@@ -125,7 +125,7 @@ src/
     ui/                                   TagBadge, NumInput, ProgressBar, ResizeHandle, TabBar, ComboboxDropdown,
                                           FlatTableHeader, FlatTableRow, SearchInput
     lib/
-      figma.ts                            isSection, isFrame, fitSectionToChildren, resizeSectionOnly, setSectionFill
+      figma.ts                            isSection, isFrame, isExportableNode, fitSectionToChildren, resizeSectionOnly, setSectionFill
       compression.ts                      pngBytesToCanvas, convertFrame, binary-search compression
       gif.ts                              assembleGif, GIF encoding via modern-gif (main thread, no worker)
       preview.ts                          escHtml, buildPreviewHtml

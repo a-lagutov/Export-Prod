@@ -58,7 +58,7 @@ Format (JPG / PNG / WEBP / GIF)
   └─ Channel (e.g., 5_Context_Media)
        └─ Platform (e.g., VK, TG, Bigo)
             └─ Creative (e.g., 1234-card)
-                 └─ Frame(s)
+                 └─ Frame(s) / Component instance(s)
 ```
 
 Format section names must exactly match the format name (case-insensitive).
@@ -150,7 +150,7 @@ Two-thread Figma plugin model with Feature-Sliced Design:
 | `src/features/export-frames/api/`               | Main thread                | Export handlers: scan, rename, export pipeline, documentchange debounce                        |
 | `src/features/place-sections/api/`              | Main thread                | Place/align handlers: create sections, position frames                                         |
 | `src/entities/frame/api/`                       | Main thread                | `scanPage()`, `getSectionsHierarchy()`, shared `exportItems` state                             |
-| `src/shared/lib/figma.ts`                       | Main thread                | `isSection`, `isFrame`, `fitSectionToChildren`, `resizeSectionOnly`, `setSectionFill`          |
+| `src/shared/lib/figma.ts`                       | Main thread                | `isSection`, `isFrame`, `isExportableNode`, `fitSectionToChildren`, `resizeSectionOnly`, `setSectionFill` |
 | `src/app/index.tsx`                             | UI thread (iframe, Preact) | Entry point — mounts `Root`, contains global CSS                                               |
 | `src/pages/export/ui/ExportPage.tsx`            | —                          | Export tab — screen state, calls `useExport()`                                                 |
 | `src/pages/organize/ui/OrganizePage.tsx`        | —                          | Place tab component                                                                            |
@@ -248,7 +248,7 @@ POSTHOG_KEY=phc_...
   └─ Канал (например: 5_Context_Media)
        └─ Площадка (например: VK, TG, Bigo)
             └─ Креатив (например: 1234-card)
-                 └─ Frame(s)
+                 └─ Фреймы / Компонентные инстансы
 ```
 
 Имена секций формата должны точно совпадать с названием формата (регистр не важен).
