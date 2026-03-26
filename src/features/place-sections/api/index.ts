@@ -5,6 +5,7 @@ import { placeResultMessage, MSG_NO_FRAMES_SELECTED } from '../../../shared/conf
 import {
   isSection,
   isFrame,
+  isExportableNode,
   fitSectionToChildren,
   resizeSectionOnly,
   setSectionFill,
@@ -222,9 +223,14 @@ export function register(): void {
         for (const pl of ch.children) {
           if (!isSection(pl)) continue
 
-          // Step 1: fit each creative to its frames (normalises frame positions inside)
+          // Step 1: rename exportable nodes to {width}x{height}, then fit each creative
           for (const cr of pl.children) {
             if (!isSection(cr)) continue
+            for (const child of cr.children) {
+              if (isExportableNode(child)) {
+                child.name = `${child.width}x${child.height}`
+              }
+            }
             fitSectionToChildren(cr, config.ALIGN_PADDING)
             setSectionFill(cr, 0.8)
           }
