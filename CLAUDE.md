@@ -199,7 +199,7 @@ For GIF: frames at the same Y position are grouped into one animation, sorted le
 
 - **JPG/WebP**: Binary search over quality parameter (0.0–1.0) to hit size limit.
 - **PNG**: Binary search over color quantization levels (2–256) to hit size limit.
-- **GIF**: Binary search over modern-gif `maxColors` parameter (2–255, higher = better quality).
+- **GIF**: For each of three dithering algorithms (Bayer, Floyd-Steinberg, Jarvis-Judice-Ninke), binary search over `maxColors` (2–255) to find the maximum palette size that fits within the limit. The combination with the highest `maxColors` is used; ties are broken by algorithm quality rank (JJN wins). Without a limit, JJN at `maxColors=255` is used directly. Bayer is included because it produces temporally stable patterns (no inter-frame flicker in static areas). Dithered frames are pre-rendered onto canvases before passing to modern-gif so the dithering is preserved exactly.
 
 Frame processing is sequential (one at a time) to avoid overloading the Figma plugin bridge.
 

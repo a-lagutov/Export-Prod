@@ -1,4 +1,7 @@
-/** Escapes special HTML characters in a string to prevent XSS when inserting into HTML. */
+/**
+ * Escapes special HTML characters in a string to prevent XSS when inserting into HTML.
+ * @param s
+ */
 export function escHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -34,6 +37,11 @@ export function buildPreviewHtml(paths: string[]): string {
     }
   }
 
+  /**
+   *
+   * @param node
+   * @param depth
+   */
   function renderNode(node: FileNode, depth: number): string {
     if (node.filePath) {
       // Leaf = image
@@ -86,9 +94,9 @@ export function buildPreviewHtml(paths: string[]): string {
   .depth-2 { margin-bottom: 12px; padding-left: 12px; border-left: 2px solid #e8e8e8; }
   .grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
   .item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .img-wrap { background: repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 0 0 / 12px 12px; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; max-width: 200px; max-height: 200px; }
-  .img-wrap img { display: block; max-width: 200px; max-height: 200px; object-fit: contain; }
-  figcaption { font-size: 11px; color: #888; text-align: center; max-width: 200px; word-break: break-all; }
+  .img-wrap { background: repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 0 0 / 12px 12px; border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0; display: inline-flex; }
+  .img-wrap img { display: block; }
+  figcaption { font-size: 11px; color: #888; text-align: center; word-break: break-all; }
 </style>
 </head>
 <body>

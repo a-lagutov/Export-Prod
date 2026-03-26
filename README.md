@@ -127,11 +127,11 @@ The screen has a search field and two view modes toggled by icons in the header:
 
 #### Compression Algorithm
 
-| Format     | Method                                               |
-| ---------- | ---------------------------------------------------- |
-| JPG / WebP | Binary search over `quality` parameter (0–1)         |
-| PNG        | Binary search over color quantization level (2–256)  |
-| GIF        | Binary search over modern-gif `maxColors` parameter (2–255) |
+| Format     | Method                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| JPG / WebP | Binary search over `quality` parameter (0–1)                                                                        |
+| PNG        | Binary search over color quantization level (2–256)                                                                 |
+| GIF        | Binary search over `maxColors` (2–255) × 3 dithering algorithms (Bayer, Floyd-Steinberg, Jarvis-Judice-Ninke); the combination achieving the highest palette size within the limit is used |
 
 #### ZIP Path Mode
 
@@ -317,11 +317,11 @@ xxxx-yyy
 
 #### Алгоритм сжатия
 
-| Формат     | Метод                                               |
-| ---------- | --------------------------------------------------- |
-| JPG / WebP | Бинарный поиск по параметру `quality` (0–1)         |
-| PNG        | Бинарный поиск по уровню квантования цвета (2–256)  |
-| GIF        | Бинарный поиск по параметру `maxColors` modern-gif (2–255) |
+| Формат     | Метод                                                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JPG / WebP | Бинарный поиск по параметру `quality` (0–1)                                                                                                             |
+| PNG        | Бинарный поиск по уровню квантования цвета (2–256)                                                                                                      |
+| GIF        | Бинарный поиск по `maxColors` (2–255) × 3 алгоритма дизеринга (Bayer, Floyd-Steinberg, Jarvis-Judice-Ninke); выбирается комбинация с наибольшей палитрой в рамках лимита |
 
 #### Режим путей в ZIP
 

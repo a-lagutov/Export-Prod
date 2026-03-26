@@ -41,18 +41,8 @@ export const PNG_SEARCH_ITERATIONS = 8
 export const PNG_LEVELS_MIN = 2
 export const PNG_LEVELS_MAX = 256
 
-/** GIF quality range (lower = better quality, larger file) */
-export const GIF_QUALITY_MIN = 1
-export const GIF_QUALITY_MAX = 30
-
-/** GIF quality used when there is no size limit */
-export const GIF_QUALITY_DEFAULT = 10
-
-/** Number of binary search iterations for GIF quality */
+/** Number of binary search iterations for GIF maxColors */
 export const GIF_SEARCH_ITERATIONS = 6
-
-/** Number of Web Worker threads used by gif.js */
-export const GIF_WORKERS = 2
 
 // ── GIF animation ─────────────────────────────────────────────────────────────
 
