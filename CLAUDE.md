@@ -35,6 +35,20 @@ npm run build     # Full build: app/figma.ts + app/index.tsx → dist/ (NODE_ENV
 npm run watch     # Watch mode: rebuilds both app/figma.ts and app/index.tsx on changes (NODE_ENV=development)
 ```
 
+### Tests (level 1 — headless, Vitest)
+
+```bash
+npm test          # vitest run — tests/unit/**/*.test.ts
+npm run test:watch
+npx tsc -p tests  # type-check tests (src/ has pre-existing type errors — filter output to files you care about)
+```
+
+- `tests/support/mock-figma.ts` — in-memory `figma` global (page/section/frame tree, `createSection`, `getNodeByIdAsync`, `exportAsync`, viewport, events, `figma.ui` channel). `loadCodeThread()` installs it and re-imports modules so `@create-figma-plugin/utilities` binds to it; `harness.send(name, ...args)` simulates a UI `emit`, `harness.messagesNamed(name)` reads what the code thread emitted, `flushAsync()` settles async handlers.
+- `tests/support/fake-canvas.ts` — fake `<canvas>`/`ImageData` with a pluggable size model for testing compression search/selection logic without real codecs.
+- `vitest.config.mts` pins `__DEV__`/`__LOG_SERVER__`/`__POSTHOG_*__`/`__VERSION__` and inlines `@create-figma-plugin/utilities` (required for per-test module reset).
+- Known bugs are pinned with `it.fails(...)`; flip to `it(...)` when fixed.
+- Not covered at this level: real image codecs (`convertFrame`, `assembleGif`), UI components/hooks, anything visual.
+
 Linting and formatting are enforced via ESLint + Prettier through a Husky pre-commit hook that runs `lint-staged`. Run `npm run prepare` once after cloning to activate the hook. Staged `ts`/`tsx` files run `eslint --fix` + `prettier --write`; staged `js`/`json`/`css`/`md` files run `prettier --write`.
 
 ## Environment Variables
