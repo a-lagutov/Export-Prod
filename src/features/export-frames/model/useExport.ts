@@ -94,14 +94,14 @@ export function useExport() {
     const pSizes = platformSizesRef.current
     const frameKey = fileName + '_' + format
     if (fSizes[frameKey] && parseFloat(fSizes[frameKey]) > 0) {
-      return parseFloat(fSizes[frameKey]) * 1024 * 1024
+      return parseFloat(fSizes[frameKey]) * 1000 * 1024
     }
     const platKey = `${format}/${platformName}`
     if (pSizes[platKey] && parseFloat(pSizes[platKey]) > 0) {
-      return parseFloat(pSizes[platKey]) * 1024 * 1024
+      return parseFloat(pSizes[platKey]) * 1000 * 1024
     }
     if (pSizes[format] && parseFloat(pSizes[format]) > 0) {
-      return parseFloat(pSizes[format]) * 1024 * 1024
+      return parseFloat(pSizes[format]) * 1000 * 1024
     }
     return null
   }
