@@ -242,7 +242,14 @@ export async function compressRasterToTarget(
     ]
     for (const { label, pixels } of candidates) {
       const blob = await binarySearchQuality(pixels, width, height, mimeType, targetSize)
-      if (!bestBlob || blob.size > bestBlob.size) {
+      const blobFits = blob.size <= targetSize
+      const bestFits = bestBlob !== null && bestBlob.size <= targetSize
+      // Prefer blobs within the limit (largest wins); if none fit, prefer smallest (min excess).
+      if (
+        !bestBlob ||
+        (blobFits && (!bestFits || blob.size > bestBlob.size)) ||
+        (!blobFits && !bestFits && blob.size < bestBlob.size)
+      ) {
         bestBlob = blob
         bestLabel = label
       }
