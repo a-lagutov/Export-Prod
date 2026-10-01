@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { SearchTextbox } from '@create-figma-plugin/ui'
 import { ComboboxDropdown } from '../../../../shared/ui/ComboboxDropdown'
 import {
@@ -66,8 +66,17 @@ export function PathInput({
   sections: SectionFormat[]
 }) {
   const [open, setOpen] = useState(false)
+  // Pending "close dropdown" timer from the last blur; cleared on refocus and unmount.
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const completions = useMemo(() => getPathCompletions(value, sections), [value, sections])
   const parts = value.split('/')
+
+  useEffect(
+    () => () => {
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
+    },
+    [],
+  )
 
   /**
    * Applies a selected autocomplete completion and appends "/" to prompt the next segment.
@@ -92,7 +101,11 @@ export function PathInput({
           value={value}
           placeholder={PLACEHOLDER_PATH}
           onValueInput={onChange}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            // Refocus within the blur delay must not let the stale timer close the dropdown.
+            if (blurTimerRef.current) clearTimeout(blurTimerRef.current)
+            setOpen(true)
+          }}
           onBlur={() => {
             blurTimerRef.current = setTimeout(() => setOpen(false), 150)
           }}
