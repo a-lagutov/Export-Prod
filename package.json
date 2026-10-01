@@ -9,7 +9,9 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write src",
     "prepare": "husky",
-    "log-server": "node scripts/log-server.js"
+    "log-server": "node scripts/log-server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "jszip": "^3.10.1",
@@ -28,6 +30,7 @@
     "eslint-plugin-jsdoc": "^61.7.1",
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "vitest": "^3.2.7"
   }
 }

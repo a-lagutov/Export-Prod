@@ -60,7 +60,8 @@ export function scanPage(): { tree: TreeNode[]; items: ExportItem[] } {
               groupFrames.sort((a, b) => a.x - b.x)
               const w = groupFrames[0].width
               const h = groupFrames[0].height
-              const sizeKey = `${w}x${h}`
+              // Round like the raster branch: Figma floats (e.g. 240.00001525878906) must not leak into file names
+              const sizeKey = `${Math.round(w)}x${Math.round(h)}`
               const count = (sizeCount.get(sizeKey) || 0) + 1
               sizeCount.set(sizeKey, count)
               const suffix = count > 1 ? `_${count}` : ''
