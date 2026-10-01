@@ -316,3 +316,4 @@ The workflow builds the plugin and attaches the ZIP (`dist/`) to the GitHub rele
 - `tsconfig.json` uses `"moduleResolution": "bundler"` — required for VS Code to resolve modern packages (preact, jszip, etc.) that use the `exports` field in `package.json`. Do not change this to `node`.
 - `Uint8Array` received from the Figma plugin bridge has type `Uint8Array<ArrayBufferLike>`, which is not directly assignable to `BlobPart`. Cast with `as BlobPart` where needed (e.g. `new Blob([bytes as BlobPart])`).
 - After cloning, run `npm run prepare` to install the Husky pre-commit hook (runs `lint-staged` on commit).
+- `@types/node` (devDependency) is required because `vitest.config.mts` imports `node:fs` (otherwise TS2591). Node types also leak into `src/` type-checking via jszip's `/// <reference types="node" />`, so restricting `types` in `tsconfig.json` cannot scope them away — do not rely on Node globals being absent in `src/`.
