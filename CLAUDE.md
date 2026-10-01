@@ -1,18 +1,18 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) in this repo.
 
 ## Code Style
 
 ### Function Comments
 
-All functions must have comments. Use JSDoc (`/** ... */`) for all public functions, hooks, and utilities. Explain non-obvious logic inside functions with inline comments (`//`).
+All functions need comments. JSDoc (`/** ... */`) for all public functions, hooks, utilities. Non-obvious logic inside functions → inline comments (`//`).
 
 Reference: https://jsdoc.app
 
 ### Variable Naming
 
-Variable and function names must be readable and descriptive. Avoid abbreviations like `cb`, `fn`, `v`, `tmp`.
+Names readable, descriptive. No abbreviations like `cb`, `fn`, `v`, `tmp`.
 
 - Functions and variables: `camelCase`
 - React/Preact components: `PascalCase`
@@ -22,11 +22,11 @@ References: [Airbnb Style Guide](https://github.com/airbnb/javascript), [TypeScr
 
 ## Commit Messages
 
-All commit messages must be in English.
+Commit messages English only.
 
 ## What This Is
 
-A Figma plugin ("Export Prod") for batch-exporting frames as JPG, PNG, WebP, or GIF with per-platform/per-frame file size limits, packaged into a ZIP download. UI labels are in Russian.
+Figma plugin ("Export Prod"). Batch-export frames as JPG, PNG, WebP, GIF with per-platform/per-frame file size limits, packed into ZIP download. UI labels Russian.
 
 ## Build Commands
 
@@ -43,17 +43,17 @@ npm run test:watch
 npx tsc -p tests  # type-check tests (src/ has pre-existing type errors — filter output to files you care about)
 ```
 
-- `tests/support/mock-figma.ts` — in-memory `figma` global (page/section/frame tree, `createSection`, `getNodeByIdAsync`, `exportAsync`, viewport, events, `figma.ui` channel). `loadCodeThread()` installs it and re-imports modules so `@create-figma-plugin/utilities` binds to it; `harness.send(name, ...args)` simulates a UI `emit`, `harness.messagesNamed(name)` reads what the code thread emitted, `flushAsync()` settles async handlers.
-- `tests/support/fake-canvas.ts` — fake `<canvas>`/`ImageData` with a pluggable size model for testing compression search/selection logic without real codecs.
-- `vitest.config.mts` pins `__DEV__`/`__LOG_SERVER__`/`__POSTHOG_*__`/`__VERSION__` and inlines `@create-figma-plugin/utilities` (required for per-test module reset).
-- Known bugs are pinned with `it.fails(...)`; flip to `it(...)` when fixed.
-- Not covered at this level: real image codecs (`convertFrame`, `assembleGif`), UI components/hooks, anything visual.
+- `tests/support/mock-figma.ts` — in-memory `figma` global (page/section/frame tree, `createSection`, `getNodeByIdAsync`, `exportAsync`, viewport, events, `figma.ui` channel). `loadCodeThread()` installs it, re-imports modules so `@create-figma-plugin/utilities` binds to it; `harness.send(name, ...args)` simulates UI `emit`, `harness.messagesNamed(name)` reads code-thread emits, `flushAsync()` settles async handlers.
+- `tests/support/fake-canvas.ts` — fake `<canvas>`/`ImageData` with pluggable size model; tests compression search/selection without real codecs.
+- `vitest.config.mts` pins `__DEV__`/`__LOG_SERVER__`/`__POSTHOG_*__`/`__VERSION__`, inlines `@create-figma-plugin/utilities` (needed for per-test module reset).
+- Known bugs pinned with `it.fails(...)`; flip to `it(...)` when fixed.
+- Not covered here: real image codecs (`convertFrame`, `assembleGif`), UI components/hooks, anything visual.
 
-Linting and formatting are enforced via ESLint + Prettier through a Husky pre-commit hook that runs `lint-staged`. Run `npm run prepare` once after cloning to activate the hook. Staged `ts`/`tsx` files run `eslint --fix` + `prettier --write`; staged `js`/`json`/`css`/`md` files run `prettier --write`.
+Lint/format enforced by ESLint + Prettier via Husky pre-commit hook running `lint-staged`. Run `npm run prepare` once after clone to activate. Staged `ts`/`tsx` → `eslint --fix` + `prettier --write`; staged `js`/`json`/`css`/`md` → `prettier --write`.
 
 ## Environment Variables
 
-Env files are loaded in CRA priority order and injected at build time via esbuild `define` as `__VAR__` constants.
+Env files loaded in CRA priority order, injected at build via esbuild `define` as `__VAR__` constants.
 
 Priority for `npm run build`: `.env.production.local` > `.env.local` > `.env.production` > `.env`
 Priority for `npm run watch`: `.env.development.local` > `.env.local` > `.env.development` > `.env`
@@ -61,34 +61,34 @@ Priority for `npm run watch`: `.env.development.local` > `.env.local` > `.env.de
 Committed (non-secret defaults): `.env`, `.env.production`, `.env.development`
 Gitignored (local overrides): `.env.local`, `.env.*.local`
 
-| Variable       | Where                                 | Purpose                                                                                                                                       |
-| -------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTHOG_KEY`  | `.env.production.local` (gitignored)  | Analytics key for production                                                                                                                  |
-| `POSTHOG_KEY`  | `.env.development.local` (gitignored) | Analytics key for development                                                                                                                 |
-| `POSTHOG_HOST` | `.env` (committed)                    | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains`                                                           |
-| `PLUGIN_NAME`  | `.env` (committed)                    | Plugin display name in Figma; injected into `dist/manifest.json` → `name`                                                                     |
-| `PLUGIN_ID`    | `.env` (committed)                    | Figma plugin ID; injected into `dist/manifest.json` → `id`                                                                                    |
+| Variable       | Where                                 | Purpose                                                                                                                  |
+| -------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `POSTHOG_KEY`  | `.env.production.local` (gitignored)  | Prod analytics key                                                                                                       |
+| `POSTHOG_KEY`  | `.env.development.local` (gitignored) | Dev analytics key                                                                                                        |
+| `POSTHOG_HOST` | `.env` (committed)                    | Analytics host; injected into `dist/manifest.json` → `networkAccess.allowedDomains`                                      |
+| `PLUGIN_NAME`  | `.env` (committed)                    | Plugin display name in Figma; injected into `dist/manifest.json` → `name`                                                |
+| `PLUGIN_ID`    | `.env` (committed)                    | Figma plugin ID; injected into `dist/manifest.json` → `id`                                                               |
 | `LOG_SERVER`   | `.env.development` (committed)        | Dev log server URL (e.g. `http://localhost:3001`); injected as `__LOG_SERVER__`; added to `manifest.json` → `networkAccess.devAllowedDomains` |
 
-If a variable is absent, it defaults to an empty string and analytics are silently disabled.
+Variable absent → empty string, analytics silently off.
 
 ### GitHub Actions Secrets
 
-Gitignored variables that must be present in release builds are passed via GitHub environment secrets. The workflow uses `environment: production` — secrets live in Settings → Environments → production. The workflow reads them as `${{ secrets.VAR_NAME }}` and passes them as `env:` to the build step.
+Gitignored vars needed in release builds come via GitHub environment secrets. Workflow uses `environment: production` — secrets in Settings → Environments → production. Workflow reads `${{ secrets.VAR_NAME }}`, passes as `env:` to build step.
 
-| Secret        | Environment  | Purpose                                                    |
-| ------------- | ------------ | ---------------------------------------------------------- |
-| `POSTHOG_KEY` | `production` | Analytics key — must match `.env.production.local` locally |
+| Secret        | Environment  | Purpose                                                  |
+| ------------- | ------------ | -------------------------------------------------------- |
+| `POSTHOG_KEY` | `production` | Analytics key — must match `.env.production.local` local |
 
-When adding a new gitignored variable that should be present in production builds: add it to the `env:` block of the `npm run build` step in `.github/workflows/release.yml` and add the corresponding secret in Settings → Environments → production.
+New gitignored var needed in prod builds: add to `env:` block of `npm run build` step in `.github/workflows/release.yml` + add secret in Settings → Environments → production.
 
 ## Architecture
 
-**Two-thread Figma plugin model with full Feature-Sliced Design (strict layer order: `app → pages → widgets → features → entities → shared`):**
+**Two-thread Figma plugin, full Feature-Sliced Design (strict layer order: `app → pages → widgets → features → entities → shared`):**
 
-- `src/app/figma.ts` — Code thread entry point (Figma sandbox). Calls `figma.showUI`, registers feature handlers, and listens to page-level Figma events (`currentpagechange`, `selectionchange`).
-- `src/app/index.tsx` — UI thread entry point (iframe, React/Preact-compat). Contains only `Root` and the `render()` call. All UI logic lives in the modules below.
-- `src/shared/config/index.ts` — Central config module. All tunable constants (window size, section layout gaps and opacities, compression parameters, GIF settings, debounce delay, export scale, `FORMATS`). Imported in both threads as `import * as config from '../shared/config'`.
+- `src/app/figma.ts` — code thread entry (Figma sandbox). Calls `figma.showUI`, registers feature handlers, listens to page-level Figma events (`currentpagechange`, `selectionchange`).
+- `src/app/index.tsx` — UI thread entry (iframe, React/Preact-compat). Only `Root` + `render()` call. All UI logic in modules below.
+- `src/shared/config/index.ts` — central config. All tunable constants (window size, section layout gaps/opacities, compression params, GIF settings, debounce delay, export scale, `FORMATS`). Imported in both threads as `import * as config from '../shared/config'`.
 
 **Source structure:**
 
@@ -154,50 +154,50 @@ src/
       index.ts                            dev-only log forwarder
 ```
 
-**Messaging:** Both threads use `emit` / `on` from `@create-figma-plugin/utilities` (no raw `figma.ui.postMessage` / `parent.postMessage`). Message format is an array `[name, ...args]` — never a `{type: X, ...}` object. Each `on(name, handler)` returns an unsubscribe function; in the UI thread, multiple listeners are collected and cleaned up in `useEffect` return: `const offs = [on(...), on(...)]; return () => offs.forEach(off => off())`.
+**Messaging:** Both threads use `emit` / `on` from `@create-figma-plugin/utilities` (no raw `figma.ui.postMessage` / `parent.postMessage`). Message format = array `[name, ...args]` — never `{type: X, ...}` object. Each `on(name, handler)` returns unsubscribe fn; UI thread collects listeners, cleans in `useEffect` return: `const offs = [on(...), on(...)]; return () => offs.forEach(off => off())`.
 
-**Initialization handshake:** `app/figma.ts` does NOT push `scan-result` on startup — the UI iframe may not have registered its message listener yet (race condition). Instead, the UI calls `emit('scan')` from its `useEffect` once listeners are registered, and the code thread responds. The same pull pattern applies to `get-sections` in the Place tab. Never switch back to push-on-startup for initial data.
+**Initialization handshake:** `app/figma.ts` does NOT push `scan-result` on startup — UI iframe may not have listener yet (race). Instead UI calls `emit('scan')` from `useEffect` once listeners registered, code thread responds. Same pull pattern for `get-sections` in Place tab. Never revert to push-on-startup for initial data.
 
 **Build pipeline (`scripts/build.js`):**
 
-1. Cleans `dist/` entirely before building to avoid stale artifacts.
+1. Cleans `dist/` fully before build — no stale artifacts.
 2. esbuild bundles `src/app/figma.ts` → `dist/code.js` with full minification (`minify: true`).
-3. Loads env files (CRA priority order), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also injects `__VERSION__` (from `git describe --tags --abbrev=0`, fallback to `package.json`) and `__DEV__` (`true` in watch mode, `false` in production)
-5. esbuild bundles `src/app/index.tsx` in memory (`write: false`) with `minifyWhitespace: true` and `minifySyntax: true` — but **not** `minifyIdentifiers`, because CSS module class names are shortened independently per file, causing collisions (`.t`, `.n`, etc. end up defined multiple times) that break styles. Entry key is named `ui` to preserve output filename. JSX uses `preact/jsx-runtime`; React imports (`react`, `react-dom`, `react/jsx-runtime`) are aliased to their Preact equivalents so React components work out of the box.
-6. Reads JS and CSS from `result.outputFiles` (never written to disk), assembles the HTML wrapper, minifies it with `@minify-html/node` (HTML-level whitespace only; JS and CSS are already minified by esbuild), and writes `dist/ui.html`.
-7. Calls `manifest.js(env)` and writes the result to `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
+3. Loads env files (CRA priority), injects `POSTHOG_*` vars and `LOG_SERVER` as `__VAR__` constants; also `__VERSION__` (from `git describe --tags --abbrev=0`, fallback `package.json`) and `__DEV__` (`true` in watch, `false` in prod)
+5. esbuild bundles `src/app/index.tsx` in memory (`write: false`) with `minifyWhitespace: true` and `minifySyntax: true` — **not** `minifyIdentifiers`, since CSS module class names shortened per file independently → collisions (`.t`, `.n`, etc. defined multiple times) break styles. Entry key `ui` to keep output filename. JSX uses `preact/jsx-runtime`; React imports (`react`, `react-dom`, `react/jsx-runtime`) aliased to Preact equivalents so React components just work.
+6. Reads JS and CSS from `result.outputFiles` (never on disk), builds HTML wrapper, minifies with `@minify-html/node` (HTML whitespace only; JS/CSS already minified by esbuild), writes `dist/ui.html`.
+7. Calls `manifest.js(env)`, writes `dist/manifest.json` (injects `PLUGIN_NAME` → `name`, `POSTHOG_HOST` → `networkAccess.allowedDomains`, `LOG_SERVER` → `networkAccess.devAllowedDomains`)
 
-**`scripts/watch.js`** additionally:
+**`scripts/watch.js`** also:
 
-- Cleans `dist/` on startup to avoid stale artifacts.
+- Cleans `dist/` on startup — no stale artifacts.
 - Writes `dist/manifest.json` on startup (dev env, includes `devAllowedDomains`)
-- Watches `manifest.js` for changes and regenerates `dist/manifest.json` immediately
-- UI bundle also uses `write: false`; the `write-html` esbuild plugin reads JS and CSS from `result.outputFiles` and writes `dist/ui.html` on every rebuild (no intermediate `ui.js`/`ui.css` on disk in watch mode either).
-- Auto-starts `scripts/log-server.js` if `LOG_SERVER` is set; watches it for changes and hot-reloads on save
+- Watches `manifest.js`, regenerates `dist/manifest.json` immediately on change
+- UI bundle also `write: false`; `write-html` esbuild plugin reads JS/CSS from `result.outputFiles`, writes `dist/ui.html` every rebuild (no intermediate `ui.js`/`ui.css` on disk in watch either).
+- Auto-starts `scripts/log-server.js` if `LOG_SERVER` set; watches it, hot-reloads on save
 
-**`manifest.js`** at the project root is the source of truth for the manifest — it exports a factory `(env) => ({...})`. Do not edit `dist/manifest.json` directly.
+**`manifest.js`** at project root = manifest source of truth — exports factory `(env) => ({...})`. Don't edit `dist/manifest.json` directly.
 
 ## Dev Logging (`src/shared/logger/index.ts`)
 
-`src/shared/logger/index.ts` is the dev-only logging module imported by `src/features/export-frames/model/useExport.ts` and `src/pages/export/ui/ExportPage.tsx`. In production (`__DEV__ = false`) all network sends are no-ops.
+`src/shared/logger/index.ts` = dev-only logging module, imported by `src/features/export-frames/model/useExport.ts` and `src/pages/export/ui/ExportPage.tsx`. Prod (`__DEV__ = false`): all network sends no-op.
 
-Exports: `log`, `warn`, `error`, `info` (thread `ui`). `fromCodeThread` is defined but not wired by default (the code thread does not emit `log` events).
+Exports: `log`, `warn`, `error`, `info` (thread `ui`). `fromCodeThread` defined but not wired by default (code thread emits no `log` events).
 
-At module load time in dev mode, it also:
+At module load in dev, also:
 
-- Overrides `console.warn` and `console.error` to forward captured output to the server as thread `figma`
-- Patches `HTMLCanvasElement.prototype.getContext` to add `{ willReadFrequently: true }` for all `'2d'` contexts (suppresses browser performance warnings)
+- Overrides `console.warn` and `console.error` → forwards output to server as thread `figma`
+- Patches `HTMLCanvasElement.prototype.getContext` to add `{ willReadFrequently: true }` for all `'2d'` contexts (suppresses browser perf warnings)
 
-**Log server** (`scripts/log-server.js`): HTTP server on port 3001, routes entries to:
+**Log server** (`scripts/log-server.js`): HTTP server port 3001, routes entries to:
 
 - `logs/ui.log` — threads `ui` and `code`
 - `logs/figma.log` — thread `figma`
 
-Started automatically by `npm run watch` when `LOG_SERVER` is set; hot-reloads when its own file changes (managed by `watch.js`).
+Auto-started by `npm run watch` when `LOG_SERVER` set; hot-reloads on own file change (managed by `watch.js`).
 
 ## Expected Figma Page Structure
 
-The plugin scans `figma.currentPage` for a 4-level nested section hierarchy:
+Plugin scans `figma.currentPage` for 4-level nested section hierarchy:
 
 ```
 Format section (JPG/PNG/WEBP/GIF)
@@ -207,113 +207,113 @@ Format section (JPG/PNG/WEBP/GIF)
                  └─ Frame(s)
 ```
 
-For GIF: frames at the same Y position are grouped into one animation, sorted left-to-right by X. Output filenames are `{width}x{height}.{ext}`, deduplicated with `_2`, `_3` suffixes.
+GIF: frames at same Y grouped into one animation, sorted left→right by X. Output filenames `{width}x{height}.{ext}`, deduped with `_2`, `_3` suffixes.
 
 ## Compression Strategy
 
-All formats apply Floyd-Steinberg / Bayer / Jarvis-Judice-Ninke dithering (shared `src/shared/lib/dither.ts`, generic `QuantizeFn` callback). Active algorithm is controlled by `DITHER_METHOD` in `shared/config/index.ts` (`'best'` | `'floyd-steinberg'` | `'bayer'` | `'jarvis-judice-ninke'`).
+All formats apply Floyd-Steinberg / Bayer / Jarvis-Judice-Ninke dithering (shared `src/shared/lib/dither.ts`, generic `QuantizeFn` callback). Active algorithm set by `DITHER_METHOD` in `shared/config/index.ts` (`'best'` | `'floyd-steinberg'` | `'bayer'` | `'jarvis-judice-ninke'`).
 
-- **JPG/WebP**: Binary search over quality (0.0–1.0). Dithering is applied as pre-processing (uniform channel quantisation at `JPG_DITHER_LEVELS`). `JPG_DITHER_CANDIDATES=true` tries original + dithered versions and keeps the largest blob ≤ limit; `false` always applies dithering directly. Selected method is logged in dev mode.
-- **PNG**: Binary search over quantisation levels (2–256) with dithering applied during quantisation. `PNG_DITHER_CANDIDATES=true` tries all methods and keeps the highest levels; `false` uses `DITHER_METHOD` directly. Selected method and levels are logged in dev mode.
-- **GIF**: Binary search over `maxColors` (2–255). Palette built via `modern-palette`, frames pre-dithered and passed to `modern-gif` (pixels already match palette colours → `findNearestIndex` hits exact matches). `GIF_DITHER_CANDIDATES=true` tries all methods and keeps the highest `maxColors`; `false` uses `DITHER_METHOD` directly. Without a limit, JJN at `maxColors=255` is used. Selected method is logged in dev mode.
+- **JPG/WebP**: binary search over quality (0.0–1.0). Dithering as pre-processing (uniform channel quantisation at `JPG_DITHER_LEVELS`). `JPG_DITHER_CANDIDATES=true` tries original + dithered, keeps largest blob ≤ limit; `false` always dithers directly. Chosen method logged in dev.
+- **PNG**: binary search over quantisation levels (2–256), dithering during quantisation. `PNG_DITHER_CANDIDATES=true` tries all methods, keeps highest levels; `false` uses `DITHER_METHOD` directly. Chosen method + levels logged in dev.
+- **GIF**: binary search over `maxColors` (2–255). Palette via `modern-palette`, frames pre-dithered, passed to `modern-gif` (pixels already match palette → `findNearestIndex` hits exact). `GIF_DITHER_CANDIDATES=true` tries all methods, keeps highest `maxColors`; `false` uses `DITHER_METHOD` directly. No limit → JJN at `maxColors=255`. Chosen method logged in dev.
 
-Frame processing is sequential (one at a time) to avoid overloading the Figma plugin bridge.
+Frames processed sequentially (one at a time) to not overload Figma plugin bridge.
 
 ## UI Features
 
 ### Export tab
 
-- **Resizes screen**: per-frame size limits live on a dedicated sub-screen rendered by `ResizeLimitsScreen` (`src/widgets/resize-limits/ui/ResizeLimitsScreen.tsx`), opened via the "Resizes" button on the main export screen. The button shows the total frame count. The sub-screen has a fixed header (`ResizeLimitsHeader`) with a back arrow (`←`), the title, a tree/table view toggle (icon buttons), and a search input pinned below the title row. `screen` state (`'main' | 'resize-limits'`) lives in `ExportPage`. `resizeLimitsView` state (`'tree' | 'table'`) lives in `useExport`.
-- **Tree view** (`resizeLimitsView === 'tree'`): collapsible format/channel/platform/creative nodes; sticky format headers; all nodes expanded by default (`defaultExpanded={true}`). Rendered via `TreeNodeView` + `FrameRow`.
-- **Table view** (`resizeLimitsView === 'table'`): flat list of all frames rendered by `TableRow` using the shared `FlatTableRow` layout. The sticky header is `TableHeader`, which wraps `FlatTableHeader` with an extra "Ресайз" column (frame name + optional GIF frame count) and a "Лимит" column. Columns: Формат | Канал | Площадка | Креатив | Ресайз | Лимит. Data comes from `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
-- **Per-frame size limits**: `FrameRow` (tree) and `TableRow` (table) components — hover highlight (`--figma-color-bg-hover`), click-to-focus on limit input (via `containerRef` + `querySelector('input')`)
-- **Per-platform size limits**: global limits per format+platform combination, stored in `platformSizes` as `"${format}/${platformName}"` keys. Each platform row is a `PlatformRow` component with hover + click-to-focus.
-- **Per-format size limits**: default limit for all platforms of a given format, stored in `platformSizes` as `"${format}"` key (no platform suffix). Rendered by `FormatRow` component. Priority in `getLimit`: per-frame > per-platform > per-format.
-- **GIF delay row**: `GifDelayRow` component — full-width hover, click-to-focus on the input.
-- **Numeric inputs** (`NumInput`, `FrameRow`, `TableRow`, `FormatRow`, `PlatformRow`, `GifDelayRow`): use `TextboxNumeric` from `@create-figma-plugin/ui` with `variant="border"` and `validateOnBlur`. `NumInput` (`src/shared/ui/NumInput.tsx`) wraps `TextboxNumeric` and accepts a `containerRef` so callers can focus the inner input via `containerRef.current?.querySelector('input')?.focus()`. The optional `suffix` prop (e.g. `"МБ"`, `"сек"`) is rendered as an absolutely positioned label overlay (`z-index: 3`) inside the wrapper div, styled to match the native Figma color-input `%` label — it is **not** passed to `TextboxNumeric`. The `.num-input-suffix` CSS class shrinks the inner input's right padding to avoid text overlapping the suffix. Do not replace with native `<input type="number">`.
-- **Text inputs** (`PathField`): use `Textbox` from `@create-figma-plugin/ui` with `variant="border"` and `onValueInput` callback.
-- **Path input** (`PathInput`): uses `SearchTextbox` from `@create-figma-plugin/ui` with `clearOnEscapeKeyDown`. The search icon is visually hidden via the `.path-input-wrap` CSS class injected in `Root`.
-- **Search/filter**: search input is in the fixed header of the Resizes screen (not in the scroll area). In tree mode it filters via `filterTree`; in table mode via `filterFlatRows`.
-- **Path mode**: segmented control to include or strip the format folder from ZIP paths
+- **Resizes screen**: per-frame size limits on dedicated sub-screen `ResizeLimitsScreen` (`src/widgets/resize-limits/ui/ResizeLimitsScreen.tsx`), opened via "Resizes" button on main export screen. Button shows total frame count. Sub-screen has fixed header (`ResizeLimitsHeader`): back arrow (`←`), title, tree/table toggle (icon buttons), search input pinned below title row. `screen` state (`'main' | 'resize-limits'`) in `ExportPage`. `resizeLimitsView` state (`'tree' | 'table'`) in `useExport`.
+- **Tree view** (`resizeLimitsView === 'tree'`): collapsible format/channel/platform/creative nodes; sticky format headers; all expanded by default (`defaultExpanded={true}`). Rendered via `TreeNodeView` + `FrameRow`.
+- **Table view** (`resizeLimitsView === 'table'`): flat list of all frames via `TableRow` using shared `FlatTableRow` layout. Sticky header `TableHeader` wraps `FlatTableHeader` with extra "Ресайз" column (frame name + optional GIF frame count) and "Лимит" column. Columns: Формат | Канал | Площадка | Креатив | Ресайз | Лимит. Data: `flattenToRows(tree)` → `filterFlatRows(rows, search)`. `FlatRow` interface holds `key`, `formatTag`, `channel`, `platform`, `creative`, `frameName`, `gifFrameInfo`.
+- **Per-frame size limits**: `FrameRow` (tree) and `TableRow` (table) — hover highlight (`--figma-color-bg-hover`), click-to-focus limit input (via `containerRef` + `querySelector('input')`)
+- **Per-platform size limits**: global limits per format+platform, stored in `platformSizes` as `"${format}/${platformName}"` keys. Each platform row = `PlatformRow` with hover + click-to-focus.
+- **Per-format size limits**: default limit for all platforms of a format, stored in `platformSizes` as `"${format}"` key (no platform suffix). Rendered by `FormatRow`. Priority in `getLimit`: per-frame > per-platform > per-format.
+- **GIF delay row**: `GifDelayRow` — full-width hover, click-to-focus input.
+- **Numeric inputs** (`NumInput`, `FrameRow`, `TableRow`, `FormatRow`, `PlatformRow`, `GifDelayRow`): use `TextboxNumeric` from `@create-figma-plugin/ui` with `variant="border"` and `validateOnBlur`. `NumInput` (`src/shared/ui/NumInput.tsx`) wraps `TextboxNumeric`, accepts `containerRef` so callers focus inner input via `containerRef.current?.querySelector('input')?.focus()`. Optional `suffix` prop (e.g. `"МБ"`, `"сек"`) rendered as absolutely positioned label overlay (`z-index: 3`) inside wrapper div, styled like native Figma color-input `%` label — **not** passed to `TextboxNumeric`. `.num-input-suffix` CSS class shrinks inner input right padding so text doesn't overlap suffix. Don't replace with native `<input type="number">`.
+- **Text inputs** (`PathField`): `Textbox` from `@create-figma-plugin/ui` with `variant="border"` and `onValueInput` callback.
+- **Path input** (`PathInput`): `SearchTextbox` from `@create-figma-plugin/ui` with `clearOnEscapeKeyDown`. Search icon hidden via `.path-input-wrap` CSS class injected in `Root`.
+- **Search/filter**: search input in fixed header of Resizes screen (not scroll area). Tree mode filters via `filterTree`; table mode via `filterFlatRows`.
+- **Path mode**: segmented control to include/strip format folder from ZIP paths
 - **GIF delay**: configurable frame delay (seconds)
-- **Preview HTML**: after export, downloads a self-contained HTML file for visual review. All Figma node names and file paths are HTML-escaped via `escHtml()` (`src/shared/lib/preview.ts`) before insertion to prevent XSS.
-- **Hover/active states**: controlled via CSS classes injected in `Root`'s `<style>` tag (in `src/app/index.tsx`). Classes and their rules:
-  - `.tab-btn` / `.tab-active` — tab bar buttons; hover/active only applies when `.tab-active` is absent
-  - `.btn-icon` / `.btn-active` — small icon buttons; hover/active skipped when `.btn-active` is present
-  - `.segmented_control_segmentedControl label:not(:has(.segmented_control_input:checked))` — hover/active skipped for the selected segment
-  - `.link-text` — clickable spans (Отмена, Очистить экспорт, Выровнять секции); uses opacity change
-  - `.back-row` — full-width clickable area in the Resizes sub-screen header (arrow + title); toggle buttons sit above it via `position: absolute` with `stopPropagation`
+- **Preview HTML**: after export, downloads self-contained HTML for visual review. All Figma node names and file paths HTML-escaped via `escHtml()` (`src/shared/lib/preview.ts`) before insertion — prevents XSS.
+- **Hover/active states**: via CSS classes injected in `Root`'s `<style>` tag (in `src/app/index.tsx`). Classes + rules:
+  - `.tab-btn` / `.tab-active` — tab bar buttons; hover/active only when `.tab-active` absent
+  - `.btn-icon` / `.btn-active` — small icon buttons; hover/active skipped when `.btn-active` present
+  - `.segmented_control_segmentedControl label:not(:has(.segmented_control_input:checked))` — hover/active skipped for selected segment
+  - `.link-text` — clickable spans (Отмена, Очистить экспорт, Выровнять секции); opacity change
+  - `.back-row` — full-width clickable area in Resizes sub-screen header (arrow + title); toggle buttons sit above via `position: absolute` with `stopPropagation`
   - `.tree-header` — collapsible node headers in both tree views
-  - `.limit-row` — rows in "Лимиты по площадкам" and the GIF delay row; full-width via `margin: 0 -N px` where needed
-  - `.num-input-suffix` — wrapper div around `TextboxNumeric` when a suffix is present; shrinks input right padding so the suffix overlay does not overlap the typed value
-  - `.path-input-wrap` — wrapper div around `SearchTextbox` in `PathInput`; hides the search icon via CSS so the field looks like a plain text input
-  - `.path-field-input` — wrapper div around `Textbox` inputs in "По полям" mode; increases input height to `var(--space-32)`
-  - Resizes nav button uses `useState` (not CSS class) because its inline `background` would override CSS `:hover`
-  - Sticky format headers in tree use `useState` for the same reason
+  - `.limit-row` — rows in "Лимиты по площадкам" and GIF delay row; full-width via `margin: 0 -N px` where needed
+  - `.num-input-suffix` — wrapper div around `TextboxNumeric` when suffix present; shrinks input right padding so suffix overlay doesn't overlap value
+  - `.path-input-wrap` — wrapper div around `SearchTextbox` in `PathInput`; hides search icon so field looks like plain text input
+  - `.path-field-input` — wrapper div around `Textbox` inputs in "По полям" mode; input height → `var(--space-32)`
+  - Resizes nav button uses `useState` (not CSS class) since inline `background` overrides CSS `:hover`
+  - Sticky format headers in tree use `useState` for same reason
   - Sticky table headers (`FlatTableHeader`) use `z-index: 10`
-- **Resize handle**: drag bottom-right corner to resize the plugin window
-- **Layout**: `Root` is a flex column filling 100% of the iframe (`html, body, #create-figma-plugin { height: 100%; overflow: hidden }`). The tab bar sits at the top; each tab content fills the remaining height.
-- **Export tab scroll**: the content area (`flex: 1, overflow-y: auto`) scrolls independently. The bottom action bar (export button / progress / download) is a normal flow element pinned at the bottom of the flex column — not `position: fixed`. The scrollbar track never overlaps the button zone.
-- **Organize tab scroll**: the whole tab container scrolls (`overflow-y: auto`) if content overflows; the section tree has its own inner scroll (`max-height: 220px, overflow-y: auto`).
-- **Bottom action bar**: Export button (phase `ready`), progress + cancel (phase `exporting`), and Download + "Очистить экспорт" (phase `done`). Button padding is overridden via an injected `<style>` tag targeting the `.export-btn-wrap` class (the `Button` component from `@create-figma-plugin/ui` does not accept a padding prop).
-- **Progress bar**: shown only during export (`phase === 'exporting'`); hidden after completion. No "Done" status text is shown.
-- **Download button label**: shows the ZIP size and file count — e.g. `Скачать ZIP · 2.34 МБ · 42 файла`. If a partial export was run (by format or platform), the label also includes the filter — e.g. `Скачать ZIP JPG · …` or `Скачать ZIP VK · …`.
+- **Resize handle**: drag bottom-right corner to resize plugin window
+- **Layout**: `Root` = flex column filling 100% of iframe (`html, body, #create-figma-plugin { height: 100%; overflow: hidden }`). Tab bar on top; tab content fills rest.
+- **Export tab scroll**: content area (`flex: 1, overflow-y: auto`) scrolls independently. Bottom action bar (export button / progress / download) = normal flow element pinned at bottom of flex column — not `position: fixed`. Scrollbar track never overlaps button zone.
+- **Organize tab scroll**: whole tab container scrolls (`overflow-y: auto`) on overflow; section tree has own inner scroll (`max-height: 220px, overflow-y: auto`).
+- **Bottom action bar**: Export button (phase `ready`), progress + cancel (phase `exporting`), Download + "Очистить экспорт" (phase `done`). Button padding overridden via injected `<style>` targeting `.export-btn-wrap` (`Button` from `@create-figma-plugin/ui` has no padding prop).
+- **Progress bar**: only during export (`phase === 'exporting'`); hidden after. No "Done" status text.
+- **Download button label**: ZIP size + file count — e.g. `Скачать ZIP · 2.34 МБ · 42 файла`. Partial export (by format or platform) → label includes filter — e.g. `Скачать ZIP JPG · …` or `Скачать ZIP VK · …`.
 
 ### Place tab (Разместить)
 
-The Place tab has three input modes selected via a segmented control:
+Three input modes via segmented control:
 
-- **По полям** (`'fields'`): separate `PathField` inputs for Format, Channel, Platform, Creative with autocomplete dropdowns. Input height increased via `.path-field-input` CSS class.
-- **Путь** (`'path'`): single `PathInput` with slash-separated path and segment-aware autocomplete. Uses `SearchTextbox` with a built-in clear button; the search icon is hidden via `.path-input-wrap` CSS class.
-- **Секции** (`'sections'`): full-screen `SectionTreePanel` fills the remaining tab height (`flex: 1`). Shows existing sections with a search input and tree/table view toggle. Platform nodes are collapsible (same style as channel nodes). The bottom action bar and "Поместить" button are hidden in this mode; placement is done via per-creative `+` buttons in the panel. A warning bar is shown at the bottom when no frames are selected.
+- **По полям** (`'fields'`): separate `PathField` inputs for Format, Channel, Platform, Creative with autocomplete dropdowns. Height increased via `.path-field-input` CSS class.
+- **Путь** (`'path'`): single `PathInput` with slash-separated path, segment-aware autocomplete. `SearchTextbox` with built-in clear button; search icon hidden via `.path-input-wrap` CSS class.
+- **Секции** (`'sections'`): full-screen `SectionTreePanel` fills remaining tab height (`flex: 1`). Shows existing sections with search input + tree/table toggle. Platform nodes collapsible (same style as channel nodes). Bottom action bar and "Поместить" button hidden here; placement via per-creative `+` buttons in panel. Warning bar at bottom when no frames selected.
 
 Common behaviours:
 
-- Sections are created if they don't exist; frames are appended to existing creative sections (stacked vertically, or horizontally for GIF slides).
-- **New section positioning**: new siblings are placed after existing ones (channels/platforms stack vertically; creatives stack horizontally within a platform).
-- **New format section positioning**: if other format sections already exist on the page, the new one is placed `FORMAT_SECTION_GAP` px to the right of the rightmost; if no format sections exist yet, it is placed at the absolute position of the selected frames and automatically selected in Figma.
-- **Section fitting** (`fitSectionToChildren` in `src/shared/lib/figma.ts`): works in local coordinates — shifts the section origin so content has `padding` space on all sides, compensates children's local positions to keep their absolute positions unchanged, then resizes. Uses local coords (not `absoluteBoundingBox`) to avoid stale values after `appendChild`. Default padding is `SECTION_FIT_PADDING` (see `shared/config/index.ts`).
-- **`SelectionIndicator`** renders only the "Выровнять секции" link — it no longer accepts or displays `selectedCount`.
-- **Align sections** (`align-sections` handler): before fitting each creative section, all exportable nodes (FRAME, COMPONENT, INSTANCE) inside it are renamed to `{width}x{height}` — the same renaming that happens at export start. Width and height are rounded with `Math.round` to avoid Figma float precision artefacts (e.g. `240.00001525878906` → `240`).
+- Missing sections created; frames appended to existing creative sections (stacked vertically, horizontally for GIF slides).
+- **New section positioning**: new siblings placed after existing (channels/platforms stack vertically; creatives stack horizontally within platform).
+- **New format section positioning**: other format sections exist → new one placed `FORMAT_SECTION_GAP` px right of rightmost; none exist → placed at absolute position of selected frames and auto-selected in Figma.
+- **Section fitting** (`fitSectionToChildren` in `src/shared/lib/figma.ts`): local coordinates — shifts section origin so content has `padding` on all sides, compensates children local positions to keep absolute positions, then resizes. Local coords (not `absoluteBoundingBox`) avoid stale values after `appendChild`. Default padding `SECTION_FIT_PADDING` (see `shared/config/index.ts`).
+- **`SelectionIndicator`** renders only "Выровнять секции" link — no longer accepts/displays `selectedCount`.
+- **Align sections** (`align-sections` handler): before fitting each creative section, all exportable nodes (FRAME, COMPONENT, INSTANCE) inside renamed to `{width}x{height}` — same renaming as export start. Width/height rounded with `Math.round` to avoid Figma float artefacts (e.g. `240.00001525878906` → `240`).
 
 ## Analytics (`src/shared/analytics/index.ts`)
 
-PostHog EU, fire-and-forget via fetch. Key and host injected at build time — not hardcoded in source.
+PostHog EU, fire-and-forget via fetch. Key and host injected at build — not hardcoded.
 
-**Note:** Figma plugin UI runs in a `data:` URL iframe — `localStorage` is blocked. The `distinct_id` is a session-scoped random ID (regenerated each plugin open).
+**Note:** Figma plugin UI runs in `data:` URL iframe — `localStorage` blocked. `distinct_id` = session-scoped random ID (regenerated each plugin open).
 
-Every event includes `version` (git tag, e.g. `v1.3.0`). In dev mode (`__DEV__ = true`), events also include `$set: { is_test_user: true }` for filtering in PostHog.
+Every event includes `version` (git tag, e.g. `v1.3.0`). Dev mode (`__DEV__ = true`): events also include `$set: { is_test_user: true }` for PostHog filtering.
 
 Tracked events: `plugin_opened`, `export_started`, `export_completed`, `export_cancelled`, `export_error`, `frames_placed`.
 
 ## Releases
 
-Releases are created automatically via GitHub Actions (`.github/workflows/release.yml`) when a version tag is pushed:
+Releases auto-created via GitHub Actions (`.github/workflows/release.yml`) on version tag push:
 
 ```bash
 git tag v1.2
 git push origin v1.2
 ```
 
-The workflow builds the plugin and attaches the ZIP (`dist/`) to the GitHub release. Do not create releases manually.
+Workflow builds plugin, attaches ZIP (`dist/`) to GitHub release. No manual releases.
 
-**Release notes** should only cover changes that are visible to the end user or affect their security: new UI features, changed behaviour, bug fixes users will notice, and security fixes. Do not mention internal tooling, dependency upgrades, build pipeline changes, or CI/CD fixes unless they directly affect the user-facing product.
+**Release notes** cover only user-visible or security-relevant changes: new UI features, changed behaviour, noticeable bug fixes, security fixes. Skip internal tooling, dependency upgrades, build pipeline, CI/CD fixes unless they directly affect user-facing product.
 
 ## Key Dependencies
 
-- `jszip` — ZIP assembly in the browser
-- `modern-gif` — GIF encoding on the main thread (no Web Worker; Figma sandbox CSP blocks Blob-URL workers)
-- `preact` — UI framework (used via React-compat alias so components can use React imports)
-- `@create-figma-plugin/ui` v4 — Figma-styled UI components (tracks current Figma design system). Used components: `Button`, `Text`, `Muted`, `VerticalSpace`, `Textbox`, `SearchTextbox`, `TextboxNumeric`, `SegmentedControl`, `render`. All inputs use `variant="border"`. `render(Component)(rootEl, props)` mounts the UI.
-- `@create-figma-plugin/utilities` v4 — `emit`/`on` (type-safe cross-thread messaging using `[name, ...args]` array format). Used in both code thread modules and `app/index.tsx`. **Do NOT use `showUI` from utilities** — it wraps `__html__` inside a `<script>` tag, which breaks because Figma provides `__html__` as a full HTML document. Use `figma.showUI(__html__, options)` directly in `app/figma.ts` instead.
-- `@figma/plugin-typings` — TypeScript types for Figma Plugin API
-- `esbuild` — Bundler
-- `@minify-html/node` — minifies the HTML wrapper in `dist/ui.html` (devDependency; used only in `scripts/build.js`)
-- `eslint-plugin-jsdoc` — ESLint plugin that enforces JSDoc presence and structure (`jsdoc/require-jsdoc`, `jsdoc/require-param`, `jsdoc/require-returns`, `jsdoc/require-description`)
+- `jszip` — ZIP assembly in browser
+- `modern-gif` — GIF encoding on main thread (no Web Worker; Figma sandbox CSP blocks Blob-URL workers)
+- `preact` — UI framework (via React-compat alias so components use React imports)
+- `@create-figma-plugin/ui` v4 — Figma-styled UI components (tracks current Figma design system). Used: `Button`, `Text`, `Muted`, `VerticalSpace`, `Textbox`, `SearchTextbox`, `TextboxNumeric`, `SegmentedControl`, `render`. All inputs `variant="border"`. `render(Component)(rootEl, props)` mounts UI.
+- `@create-figma-plugin/utilities` v4 — `emit`/`on` (type-safe cross-thread messaging, `[name, ...args]` array format). Used in code thread modules and `app/index.tsx`. **Do NOT use `showUI` from utilities** — wraps `__html__` in `<script>` tag, breaks because Figma gives `__html__` as full HTML document. Use `figma.showUI(__html__, options)` directly in `app/figma.ts`.
+- `@figma/plugin-typings` — TS types for Figma Plugin API
+- `esbuild` — bundler
+- `@minify-html/node` — minifies HTML wrapper in `dist/ui.html` (devDependency; only in `scripts/build.js`)
+- `eslint-plugin-jsdoc` — enforces JSDoc presence/structure (`jsdoc/require-jsdoc`, `jsdoc/require-param`, `jsdoc/require-returns`, `jsdoc/require-description`)
 
 ## TypeScript / IDE Notes
 
-- `tsconfig.json` uses `"moduleResolution": "bundler"` — required for VS Code to resolve modern packages (preact, jszip, etc.) that use the `exports` field in `package.json`. Do not change this to `node`.
-- `Uint8Array` received from the Figma plugin bridge has type `Uint8Array<ArrayBufferLike>`, which is not directly assignable to `BlobPart`. Cast with `as BlobPart` where needed (e.g. `new Blob([bytes as BlobPart])`).
-- After cloning, run `npm run prepare` to install the Husky pre-commit hook (runs `lint-staged` on commit).
-- `@types/node` (devDependency) is required because `vitest.config.mts` imports `node:fs` (otherwise TS2591). Node types also leak into `src/` type-checking via jszip's `/// <reference types="node" />`, so restricting `types` in `tsconfig.json` cannot scope them away — do not rely on Node globals being absent in `src/`.
+- `tsconfig.json` uses `"moduleResolution": "bundler"` — needed for VS Code to resolve modern packages (preact, jszip, etc.) using `exports` field in `package.json`. Don't change to `node`.
+- `Uint8Array` from Figma plugin bridge typed `Uint8Array<ArrayBufferLike>`, not directly assignable to `BlobPart`. Cast `as BlobPart` where needed (e.g. `new Blob([bytes as BlobPart])`).
+- After clone, run `npm run prepare` to install Husky pre-commit hook (runs `lint-staged` on commit).
+- `@types/node` (devDependency) required since `vitest.config.mts` imports `node:fs` (else TS2591). Node types also leak into `src/` type-checking via jszip's `/// <reference types="node" />`, so restricting `types` in `tsconfig.json` can't scope them away — don't rely on Node globals being absent in `src/`.
