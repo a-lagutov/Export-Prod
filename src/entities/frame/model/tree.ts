@@ -55,6 +55,10 @@ export function filterNode(node: TreeNode, query: string): TreeNode | null {
  */
 export function countFrames(node: TreeNode): string {
   let count = 0
+  /**
+   * Depth-first visit that increments `count` for every frame leaf.
+   * @param n - Node to visit.
+   */
   function walk(n: TreeNode) {
     if (n.type === 'frame') count++
     n.children?.forEach(walk)
