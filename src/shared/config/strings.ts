@@ -149,6 +149,13 @@ export const BTN_ADD_FRAMES_TITLE = 'Добавить выделенные фр�
 
 // ── Place result message (code thread) ────────────────────────────────────────
 
+/** Russian declension forms for "фрейм помещён". Spread into `declension(count, ...DECLENSION_FRAME_PLACED)`. */
+export const DECLENSION_FRAME_PLACED = [
+  'фрейм помещён',
+  'фрейма помещено',
+  'фреймов помещено',
+] as const
+
 /**
  * e.g. "3 фрейма помещено в JPG / Channel / Platform / Creative"
  * @param count
@@ -164,7 +171,7 @@ export const placeResultMessage = (
   platform: string,
   creative: string,
 ) => {
-  const placed = count === 1 ? 'фрейм помещён' : count < 5 ? 'фрейма помещено' : 'фреймов помещено'
+  const placed = declension(count, ...DECLENSION_FRAME_PLACED)
   return `${count} ${placed} в ${format} / ${channel} / ${platform} / ${creative}`
 }
 
